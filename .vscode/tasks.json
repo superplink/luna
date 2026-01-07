@@ -1,0 +1,23 @@
+﻿{
+	"tasks": [
+		{
+			"type": "shell",
+			"label": "Build All (debug)",
+			"command": "make",
+			"args": ["config=debug"],
+		},
+		{
+			"type": "shell",
+			"label": "Build All (release)",
+			"command": "make",
+			"args": ["config=release"],
+		},
+		{
+			"type": "shell",
+			"label": "Build All (dist)",
+			"command": "make",
+			"args": ["config=dist"],
+		},
+	],
+	"version": "2.0.0"
+}

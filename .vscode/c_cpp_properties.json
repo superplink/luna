@@ -1,0 +1,44 @@
+{
+	"configurations": [
+		{
+			"name": "tests (debug)",
+			"includePath": [
+				"${workspaceRoot}/src",
+			],
+			"defines": [
+				"DEBUG",
+			],
+			"intelliSenseMode": "windows-gcc-x86",
+			"cStandard": "c17",
+			"cppStandard": "c++23",
+			"compilerPath": "g++"
+		},
+		{
+			"name": "tests (release)",
+			"includePath": [
+				"${workspaceRoot}/src",
+			],
+			"defines": [
+				"DEBUG",
+			],
+			"intelliSenseMode": "windows-gcc-x86",
+			"cStandard": "c17",
+			"cppStandard": "c++23",
+			"compilerPath": "g++"
+		},
+		{
+			"name": "tests (dist)",
+			"includePath": [
+				"${workspaceRoot}/src",
+			],
+			"defines": [
+				"NDEBUG",
+			],
+			"intelliSenseMode": "windows-gcc-x86",
+			"cStandard": "c17",
+			"cppStandard": "c++23",
+			"compilerPath": "g++"
+		},
+	],
+	"version": 4
+}
