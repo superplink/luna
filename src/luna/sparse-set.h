@@ -80,6 +80,7 @@ public:
 
     constexpr size_type size () const { return _len; }
     constexpr size_type full_size () const { return _sparse.size(); }
+    bool is_full () const { return size() == full_size(); }
 
     void clear () {
         _sparse.clear();
@@ -94,6 +95,10 @@ public:
     template <class T>
     Span<const Index<T>> indexes () const {
         return Span<const Index<T>>((const Index<T>*)_dense.begin(), (const Index<T>*)_dense.end());
+    }
+
+    size_type next_index () const {
+        return is_full() ? _len : _dense[_len];
     }
 
 private:

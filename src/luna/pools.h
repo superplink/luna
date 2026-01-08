@@ -405,10 +405,12 @@ public:
     T* begin () { return _pool.begin(); }
     T* end () { return _end; }
     T* data () { return _pool.data(); }
+    T* data_end () { return _pool.end(); }
 
     const T* begin () const { return _pool.begin(); }
     const T* end () const { return _end; }
     const T* data () const { return _pool.data(); }
+    const T* data_end () const { return _pool.end(); }
 
     T& at (Index<T> index) {
         return _pool.at(index);

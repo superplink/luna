@@ -57,6 +57,7 @@ public:
 
     size_type size () const { return _sset.size(); }
     size_type full_size () const { return _sset.full_size(); }
+    bool is_full () const { return size() == full_size(); }
 
     iterator begin () { return _elts.begin(); }
     iterator end () { return _elts.end(); }
@@ -65,6 +66,10 @@ public:
 
     auto ipairs () {
         return std::views::zip(_sset.template indexes<T>(), _elts);
+    }
+
+    index_type next_index () const {
+        return _sset.next_index();
     }
 
 private:

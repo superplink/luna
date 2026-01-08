@@ -86,7 +86,7 @@ public:
     }
 
     void resize (size_type count, const T& val = {}) {
-        if (count > size()) {
+        if (count < size()) {
             for (size_type i = size(); i-- > count;) {
                 _pool.destroy(i);
             }

@@ -24,7 +24,7 @@ public:
     size_type push () {
         if (is_full()) {
             _chain.push_back(nullindex);
-            return _chain.size() - 2;
+            return _chain.size() - 1;
         }
         size_type index = _root;
         _root = _chain[_root];
@@ -53,6 +53,10 @@ public:
         return _chain[index] == nullindex;
     }
 
+    size_type next_index () const {
+        return _root == tombstone ? size() : _root;
+    }
+
 private:
 
     size_type _remove_count = 0;
@@ -70,6 +74,9 @@ public:
     using value_type = typename std::iterator_traits<It>::value_type;
     using reference = typename std::iterator_traits<It>::reference;
     using pointer = typename std::iterator_traits<It>::pointer;
+    using difference_type = typename std::iterator_traits<It>::difference_type;
+
+    constexpr RemoveChainValueIterator () {}
 
     constexpr RemoveChainValueIterator (It __it, size_type* __chain_ptr, size_type* __chain_end)
     : _it(__it), _chain_ptr(__chain_ptr), _chain_end(__chain_end) {}
@@ -117,6 +124,37 @@ private:
     It _it;
 
 };
+
+
+template <class It>
+RemoveChainValueIterator<It> make_remove_chain_iterator (It it, index_t* __chain_ptr, index_t* __chain_end) {
+    return RemoveChainValueIterator<It>(it, __chain_ptr, __chain_end);
+}
+
+
+template <class T>
+auto make_remove_chain_view (T& container, index_t* __chain_ptr, index_t* __chain_end) {
+    return std::ranges::subrange{
+        make_remove_chain_iterator(container.begin(), __chain_ptr, __chain_end),
+        make_remove_chain_iterator(container.end(), __chain_ptr, __chain_end)
+    };
+}
+template <class T>
+auto make_remove_chain_view (const T& container, index_t* __chain_ptr, index_t* __chain_end) {
+    return std::ranges::subrange{
+        make_remove_chain_iterator(container.begin(), __chain_ptr, __chain_end),
+        make_remove_chain_iterator(container.end(), __chain_ptr, __chain_end)
+    };
+}
+
+
+
+template <class T>
+concept RemoveChainIterableC = requires (T x) {
+    { x.begin() } -> std::same_as<RemoveChainValueIterator<typename T::value_type>>;
+    { x.end() } -> std::same_as<RemoveChainValueIterator<typename T::value_type>>;
+};
+
 
 
 template <class It>
@@ -200,6 +238,16 @@ public:
     using const_reverse_iterator = std::reverse_iterator<const_iterator>;
     using allocator = pool_type::allocator;
 
+    template <
+        class __Key,
+        class __Val,
+        class __Hasher,
+        class __Equal,
+        ArrayPool __KeyPool,
+        ArrayPool __ValPool,
+        ArrayPool __BucketPool>
+    friend class Map;
+
     DenseVector () {}
 
     template <ArrayPool _OtherPool>
@@ -278,10 +326,15 @@ public:
         _removed.clear();
     }
 
+    T& at (index_type index) { return _pool.at(index); }
+    const T& at (index_type index) const { return _pool.at(index); }
+
+    T& operator[] (index_type index) { return _pool.at(index); }
+    const T& operator[] (index_type index) const { return _pool.at(index); }
+
     size_type size () const { return _removed.size(); }
     size_type full_size () const { return _removed.full_size(); }
     bool is_full () const { return _removed.is_full(); }
-
 
     iterator begin () { return iterator(_pool.begin(), _removed.begin(), _removed.end()); }
     iterator end () { return iterator(_pool.end(), _removed.end(), _removed.end()); }
@@ -300,7 +353,16 @@ public:
         return RemoveChainIPairView<const T*>(_pool.begin(), _pool.end(), _removed.begin(), _removed.end());
     }
 
-private:
+    index_type next_index () const {
+        return _removed.next_index();
+    }
+
+    T* data () { return _pool.begin(); }
+    // T* data_end () { return _pool.end(); }
+    const T* data () const { return _pool.begin(); }
+    // const T* data_end () const { return _pool.end(); }
+
+// private:
 
     void _destroy_elts () {
         for (size_type i = _pool.size(); i-- > 0;) {
@@ -317,6 +379,13 @@ private:
     RemoveChain _removed;
 
 };
+
+
+
+// template <class T, class U, ArrayPool _P1, ArrayPool _P2>
+// inline auto zip_like_dense_vectors (DenseVector<T, _P1>& a, DenseVector<U, _P2>& b) {
+//     return std::
+// }
 
 
 

@@ -85,6 +85,12 @@ std::ostream& operator<< (std::ostream& os, Index<T> val) {
 namespace luna {
     
 
+template <class T>
+concept IterableC = requires (T x) {
+    { x.begin() } -> std::same_as<typename T::iterator>;
+    { x.end() } -> std::same_as<typename T::iterator>;
+};
+
 
 template <class T>
 inline constexpr bool bounds_check (const T& val, const T& low, const T& high) {
@@ -156,16 +162,18 @@ requires (_Vec vec, typename _Vec::index_type index, typename _Vec::value_type v
     { vec.at(index) } -> std::convertible_to<typename _Vec::value_type>;
     { vec[index] } -> std::convertible_to<typename _Vec::value_type>;
     vec.clear();
-    { vec.size(index) } -> std::convertible_to<typename _Vec::size_type>;
-    { vec.begin(index) } -> std::convertible_to<typename _Vec::iterator>;
-    { vec.end(index) } -> std::convertible_to<typename _Vec::iterator>;
+    { vec.begin() } -> std::convertible_to<typename _Vec::iterator>;
+    { vec.end() } -> std::convertible_to<typename _Vec::iterator>;
+    { vec.ipairs() } -> IterableC;
 } &&
 requires (const _Vec& vec, typename _Vec::index_type index, typename _Vec::value_type val, _Args... args) {
     { vec.at(index) } -> std::convertible_to<typename _Vec::value_type>;
     { vec[index] } -> std::convertible_to<typename _Vec::value_type>;
-    { vec.size(index) } -> std::convertible_to<typename _Vec::size_type>;
-    { vec.begin(index) } -> std::convertible_to<typename _Vec::const_iterator>;
-    { vec.end(index) } -> std::convertible_to<typename _Vec::const_iterator>;
+    { vec.size() } -> std::convertible_to<typename _Vec::size_type>;
+    { vec.begin() } -> std::convertible_to<typename _Vec::const_iterator>;
+    { vec.end() } -> std::convertible_to<typename _Vec::const_iterator>;
+    { vec.next_index() } -> std::convertible_to<typename _Vec::size_type>;
+    { vec.ipairs() } -> IterableC;
 };
 
 
