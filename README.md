@@ -1,0 +1,6 @@
+This is a collection of low level data structure classes. I have developed these because I found the stnadard library to have a very inflexible interface, not to mention its hash tables are way slower than they should be because they require the pointer to an object stored in it to always be valid. Data structures do not rely on pointers.
+
+## Performance
+I have done some early testing...
+
+I have used this in some of my other projects, including...

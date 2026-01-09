@@ -36,7 +36,7 @@ concept MoveC = requires (_Move mv, _InputIt __first, _InputIt __last, _ForwardI
 
 
 template <class T, class... _Args>
-concept ArrayPool = requires (T pool, typename T::size_type count, typename T::index_type index, _Args... args) {
+concept ArrayChunk = requires (T pool, typename T::size_type count, typename T::index_type index, _Args... args) {
     pool.allocate(count);
     pool.deallocate();
     pool.construct(index, args...);
@@ -83,7 +83,7 @@ private:
 
 
 template <class T, class _Alloc = std::allocator<T>>
-class HeapArrayPool {
+class HeapArrayChunk {
 public:
 
     using value_type = T;
@@ -92,7 +92,7 @@ public:
     using allocator = _Alloc;
     using alloc_traits = std::allocator_traits<_Alloc>;
 
-    HeapArrayPool ()
+    HeapArrayChunk ()
     : _first(nullptr)
     , _last(nullptr) {}
 
@@ -168,7 +168,7 @@ private:
 
 
 template <class T, index_t _Len, class _Alloc = std::allocator<T>>
-class InplaceArrayPool {
+class InplaceArrayChunk {
 public:
 
     using value_type = T;
@@ -237,7 +237,7 @@ private:
 
 
 template <class T, index_t _InlineSize, class _Alloc = std::allocator<T>>
-class CompactArrayPool {
+class CompactArrayChunk {
 public:
 
     using value_type = T;
@@ -332,15 +332,15 @@ private:
 
 
 
-template <class T, ArrayPool _Pool = HeapArrayPool<T>>
-class PushArrayPool {
+template <class T, ArrayChunk _Pool = HeapArrayChunk<T>>
+class PushArrayChunk {
 public:
 
     using pool_type = _Pool;
     using size_type = index_t;
     using allocator = typename _Pool::allocator;
 
-    PushArrayPool ()
+    PushArrayChunk ()
     : _pool()
     , _end(_pool.begin()) {}
 

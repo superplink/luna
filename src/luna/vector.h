@@ -1,6 +1,6 @@
 #pragma once
 #include "index.h"
-#include "pools.h"
+#include "memory.h"
 #include <memory>
 #include <iterator>
 
@@ -9,14 +9,14 @@ namespace luna {
     
 
 
-template <class T, ArrayPool _Pool = HeapArrayPool<T>>
+template <class T, ArrayChunk _Pool = HeapArrayChunk<T>>
 class BasicVector {
 public:
 
     using value_type = T;
     using size_type = index_t;  
     using index_type = Index<T>;
-    using pool_type = PushArrayPool<T, _Pool>;
+    using pool_type = PushArrayChunk<T, _Pool>;
 
     using iterator = T*;
     using const_iterator = const T*;
@@ -25,14 +25,14 @@ public:
 
     BasicVector () {}
 
-    template <ArrayPool _OtherPool>
+    template <ArrayChunk _OtherPool>
     BasicVector (const BasicVector<T, _OtherPool>& other) {
         reserve(other.capacity());
         _pool.push_back(other.size());
         std::uninitialized_copy(other.begin(), other.end(), _pool.begin());
     }
 
-    template <ArrayPool _OtherPool>
+    template <ArrayChunk _OtherPool>
     BasicVector (BasicVector<T, _OtherPool>&& other) {
         reserve(other.capacity());
         _pool.push_back(other.size());
@@ -40,7 +40,7 @@ public:
         other._pool.deallocate();
     }
 
-    template <ArrayPool _OtherPool>
+    template <ArrayChunk _OtherPool>
     BasicVector& operator= (const BasicVector<T, _OtherPool>& other) {
         clear();
         reserve(other.capacity());
@@ -49,7 +49,7 @@ public:
         return *this;
     }
 
-    template <ArrayPool _OtherPool>
+    template <ArrayChunk _OtherPool>
     BasicVector& operator= (BasicVector<T, _OtherPool>&& other) {
         clear();
         reserve(other.capacity());
@@ -149,13 +149,13 @@ private:
 
 
 template <class T, class _Alloc = std::allocator<T>>
-using Vector = BasicVector<T, HeapArrayPool<T, _Alloc>>;
+using Vector = BasicVector<T, HeapArrayChunk<T, _Alloc>>;
 
 template <class T, index_t _Len, class _Alloc = std::allocator<T>>
-using InplaceVector = BasicVector<T, InplaceArrayPool<T, _Len, _Alloc>>;
+using InplaceVector = BasicVector<T, InplaceArrayChunk<T, _Len, _Alloc>>;
 
 template <class T, index_t _InplaceLen, class _Alloc = std::allocator<T>>
-using CompactVector = BasicVector<T, CompactArrayPool<T, _InplaceLen, _Alloc>>;
+using CompactVector = BasicVector<T, CompactArrayChunk<T, _InplaceLen, _Alloc>>;
 
 
 

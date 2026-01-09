@@ -1,6 +1,6 @@
 #pragma once
 #include "index.h"
-#include "pools.h"
+#include "memory.h"
 #include <memory>
 #include <iterator>
 #include "vector.h"
@@ -223,14 +223,14 @@ struct RemoveChainUninitializedMove {
 
 
 
-template <class T, ArrayPool _Pool = HeapArrayPool<T>>
+template <class T, ArrayChunk _Pool = HeapArrayChunk<T>>
 class DenseVector {
 public:
 
     using value_type = T;
     using size_type = index_t;  
     using index_type = Index<T>;
-    using pool_type = PushArrayPool<T, _Pool>;
+    using pool_type = PushArrayChunk<T, _Pool>;
 
     using iterator = RemoveChainValueIterator<T*>;
     using const_iterator = RemoveChainValueIterator<const T*>;
@@ -243,14 +243,14 @@ public:
         class __Val,
         HasherC<__Key> __Hasher,
         CompareC<__Key, __Key> __Equal,
-        ArrayPool __KeyPool,
-        ArrayPool __ValPool,
-        ArrayPool __BucketPool>
+        ArrayChunk __KeyPool,
+        ArrayChunk __ValPool,
+        ArrayChunk __BucketPool>
     friend class Map;
 
     DenseVector () {}
 
-    template <ArrayPool _OtherPool>
+    template <ArrayChunk _OtherPool>
     DenseVector (const DenseVector<T, _OtherPool>& other) {
         clear();
         reserve(other.capacity());
@@ -258,7 +258,7 @@ public:
         _get_mv().copy(other.begin(), other.end(), _pool.begin());
     }
 
-    template <ArrayPool _OtherPool>
+    template <ArrayChunk _OtherPool>
     DenseVector (DenseVector<T, _OtherPool>&& other) {
         clear();
         reserve(other.capacity());
@@ -266,7 +266,7 @@ public:
         _get_mv().move(other.begin(), other.end(), _pool.begin());
     }
 
-    template <ArrayPool _OtherPool>
+    template <ArrayChunk _OtherPool>
     DenseVector& operator= (const DenseVector<T, _OtherPool>& other) {
         clear();
         reserve(other.capacity());
@@ -275,7 +275,7 @@ public:
         return *this;
     }
 
-    template <ArrayPool _OtherPool>
+    template <ArrayChunk _OtherPool>
     DenseVector& operator= (DenseVector<T, _OtherPool>&& other) {
         clear();
         reserve(other.capacity());
@@ -382,7 +382,7 @@ public:
 
 
 
-// template <class T, class U, ArrayPool _P1, ArrayPool _P2>
+// template <class T, class U, ArrayChunk _P1, ArrayChunk _P2>
 // inline auto zip_like_dense_vectors (DenseVector<T, _P1>& a, DenseVector<U, _P2>& b) {
 //     return std::
 // }

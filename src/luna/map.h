@@ -77,9 +77,9 @@ template <
     class _Val,
     HasherC<_Key> _Hasher = BasicHasher<_Key>,
     CompareC<_Key, _Key> _Equal = BasicCmp<_Key>,
-    ArrayPool _KeyPool = HeapArrayPool<_Key>,
-    ArrayPool _ValPool = HeapArrayPool<_Val>,
-    ArrayPool _BucketPool = HeapArrayPool<index_t>>
+    ArrayChunk _KeyPool = HeapArrayChunk<_Key>,
+    ArrayChunk _ValPool = HeapArrayChunk<_Val>,
+    ArrayChunk _BucketPool = HeapArrayChunk<index_t>>
 class Map {
 public:
 

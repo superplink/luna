@@ -1,6 +1,6 @@
 #pragma once
 #include "index.h"
-#include "pools.h"
+#include "memory.h"
 #include <memory>
 #include <iterator>
 #include "vector.h"
@@ -23,7 +23,7 @@ struct BucketElt {
 };
 
 
-template <ArrayPool _Pool = HeapArrayPool<index_t>>
+template <ArrayChunk _Pool = HeapArrayChunk<index_t>>
 class BasicBucketVector {
 public:
 
@@ -97,8 +97,8 @@ template <
     class T,
     HasherC<T> _Hasher = BasicHasher<T>,
     CompareC<T, T> _Equal = BasicCmp<T>,
-    ArrayPool _Pool = HeapArrayPool<T>,
-    ArrayPool _BucketPool = HeapArrayPool<index_t>>
+    ArrayChunk _Pool = HeapArrayChunk<T>,
+    ArrayChunk _BucketPool = HeapArrayChunk<index_t>>
 class Set {
 public:
 
@@ -116,9 +116,9 @@ public:
         class __Val,
         HasherC<__Key> __Hasher,
         CompareC<__Key, __Key> __Equal,
-        ArrayPool __KeyPool,
-        ArrayPool __ValPool,
-        ArrayPool __BucketPool>
+        ArrayChunk __KeyPool,
+        ArrayChunk __ValPool,
+        ArrayChunk __BucketPool>
     friend class Map;
 
     Set (size_type __bucket_count = 101, size_type __max_depth = 4, size_type __resize_scaler = 4)

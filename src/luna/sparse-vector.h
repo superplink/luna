@@ -12,9 +12,9 @@ namespace luna {
 
 template <
     class T,
-    ArrayPool _Pool = HeapArrayPool<T>,
-    ArrayPool _SparsePool = HeapArrayPool<DenseIndex>,
-    ArrayPool _DensePool = HeapArrayPool<SparseIndex>>
+    ArrayChunk _Pool = HeapArrayChunk<T>,
+    ArrayChunk _SparsePool = HeapArrayChunk<DenseIndex>,
+    ArrayChunk _DensePool = HeapArrayChunk<SparseIndex>>
 class BasicSparseVector {
 public:
 
@@ -84,9 +84,9 @@ private:
 template <class T, class _Alloc = std::allocator<T>>
 using SparseVector = BasicSparseVector<
     T,
-    HeapArrayPool<T, _Alloc>,
-    HeapArrayPool<DenseIndex>,
-    HeapArrayPool<SparseIndex>
+    HeapArrayChunk<T, _Alloc>,
+    HeapArrayChunk<DenseIndex>,
+    HeapArrayChunk<SparseIndex>
 >;
 
 

@@ -1,6 +1,6 @@
 #pragma once
 #include "index.h"
-#include "pools.h"
+#include "memory.h"
 #include "vector.h"
 
 
@@ -33,7 +33,7 @@ struct DenseIndex {
 };
 
 
-template <ArrayPool _SparsePool = HeapArrayPool<DenseIndex>, ArrayPool _DensePool = HeapArrayPool<SparseIndex>>
+template <ArrayChunk _SparsePool = HeapArrayChunk<DenseIndex>, ArrayChunk _DensePool = HeapArrayChunk<SparseIndex>>
 class BasicSparseSet {
 public:
 
