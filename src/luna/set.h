@@ -9,7 +9,7 @@
 
 
 namespace luna {
-    
+
 
 struct BucketElt {
     using size_type = index_t;
@@ -95,8 +95,8 @@ using BucketVector = BasicBucketVector<>;
 
 template <
     class T,
-    class _Hasher = std::hash<T>,
-    class _Equal = std::equal_to<T>,
+    HasherC<T> _Hasher = BasicHasher<T>,
+    CompareC<T, T> _Equal = BasicCmp<T>,
     ArrayPool _Pool = HeapArrayPool<T>,
     ArrayPool _BucketPool = HeapArrayPool<index_t>>
 class Set {
@@ -114,8 +114,8 @@ public:
     template <
         class __Key,
         class __Val,
-        class __Hasher,
-        class __Equal,
+        HasherC<__Key> __Hasher,
+        CompareC<__Key, __Key> __Equal,
         ArrayPool __KeyPool,
         ArrayPool __ValPool,
         ArrayPool __BucketPool>
@@ -126,12 +126,12 @@ public:
         _buckets.resize_buckets(__bucket_count);
     }
 
-    std::pair<index_type, bool> insert (const T& val) {
-        BucketElt bucket_elt = _find_bucket_elt(val);
+    std::pair<index_type, bool> insert (const T& val, const _Hasher& __hasher = {}, const _Equal& __key_equal = {}) {
+        BucketElt bucket_elt = _find_bucket_elt(val, __hasher, __key_equal);
         if (bucket_elt.at_end()) {
             assert(_buckets.size() >= _elts.next_index());
             if (maybe_rehash()) {
-                bucket_elt = _find_bucket_elt(val);
+                bucket_elt = _find_bucket_elt(val, __hasher, __key_equal);
             }
             if (_buckets.size() == _elts.next_index()) {
                 _buckets.push_back();
@@ -143,31 +143,35 @@ public:
         return std::make_pair((index_type)bucket_elt.index, false);
     }
 
-    index_type remove (const T& val) {
-        BucketElt elt = _find_bucket_elt(val);
+    template <class _T>
+    index_type remove (const _T& val, const _Hasher& __hasher = {}, const _Equal& __key_equal = {}) {
+        BucketElt elt = _find_bucket_elt(val, __hasher, __key_equal);
         if (elt.index == nullindex) return nullindex;
         _buckets.bucket_remove(elt);
         _elts.remove(elt.index);
         return elt.index;
     }
 
-    T* find (const T& val) {
-        index_type index = find_index(val);
+    template <class _T>
+    T* find (const _T& val, const _Hasher& __hasher = {}, const _Equal& __key_equal = {}) {
+        index_type index = find_index(val, __hasher, __key_equal);
         return index == nullindex ? nullptr : at(index);
     }
-    const T* find (const T& val) const {
-        index_type index = find_index(val);
+    template <class _T>
+    const T* find (const _T& val, const _Hasher& __hasher = {}, const _Equal& __key_equal = {}) const {
+        index_type index = find_index(val, __hasher, __key_equal);
         return index == nullindex ? nullptr : at(index);
     }
 
-    index_type find_index (const T& val) const {
-        return _find_bucket_elt(val).index;
+    template <class _T>
+    index_type find_index (const _T& val, const _Hasher& __hasher = {}, const _Equal& __key_equal = {}) const {
+        return _find_bucket_elt(val, __hasher, __key_equal).index;
     }
 
-    void rehash (size_type __bucket_count) {
+    void rehash (size_type __bucket_count, const _Hasher& __hasher = {}, const _Equal& __key_equal = {}) {
         _buckets.resize_buckets(__bucket_count);
         for (auto [i, val] : _elts.ipairs()) {
-            BucketElt elt = _find_bucket_elt(val);
+            BucketElt elt = _find_bucket_elt(val, __hasher, __key_equal);
             _buckets.bucket_append(elt, i);
         }
     }
@@ -196,15 +200,18 @@ public:
 
 private:
 
-    size_type _get_bucket (const T& val) const {
-        return hasher{}(val) % _buckets.bucket_count();
+    template <class _T>
+    size_type _get_bucket (const _T& val, const _Hasher& __hasher) const {
+        return __hasher.hash(val) % _buckets.bucket_count();
     }
 
-    BucketElt _find_bucket_elt (const T& val) const {
-        BucketElt bucket_elt = _buckets.bucket_start(_get_bucket(val));
+    template <class _T>
+    BucketElt _find_bucket_elt (const _T& val, const _Hasher& __hasher, const _Equal& __cmp) const {
+        BucketElt bucket_elt = _buckets.bucket_start(_get_bucket(val, __hasher));
         while (_buckets.get(bucket_elt)) {
-            if (key_equal{}(val, _elts[bucket_elt.index]))
+            if (__cmp.cmp(_elts[bucket_elt.index], val)) {
                 return bucket_elt;
+            }
         }
         return bucket_elt;
     }

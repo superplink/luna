@@ -175,6 +175,29 @@ requires (const _Vec& vec, typename _Vec::index_type index, typename _Vec::value
     { vec.next_index() } -> std::convertible_to<typename _Vec::size_type>;
     { vec.ipairs() } -> IterableC;
 };
+    
+
+template <class T>
+struct BasicHasher {
+    static size_t hash (const T& val) {
+        return std::hash<T>{}(val);
+    }
+};
+template <class _Hasher, class T>
+concept HasherC = requires (const _Hasher& hasher, const T& val) {
+    { hasher.hash(val) } -> std::convertible_to<size_t>;
+};
+
+template <class T, class U = T>
+struct BasicCmp {
+    static bool cmp (const T& a, const U& b) {
+        return a == b;
+    }
+};
+template <class _Cmp, class T, class U>
+concept CompareC = requires (const _Cmp& cmp, const T& a, const U& b) {
+    { cmp.cmp(a, b) } -> std::convertible_to<bool>;
+};
 
 
 } // namespace luna

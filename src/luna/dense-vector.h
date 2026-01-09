@@ -241,8 +241,8 @@ public:
     template <
         class __Key,
         class __Val,
-        class __Hasher,
-        class __Equal,
+        HasherC<__Key> __Hasher,
+        CompareC<__Key, __Key> __Equal,
         ArrayPool __KeyPool,
         ArrayPool __ValPool,
         ArrayPool __BucketPool>
