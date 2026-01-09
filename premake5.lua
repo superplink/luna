@@ -1,6 +1,6 @@
 
 
-workspace "ecs"
+workspace "luna"
     configurations { "debug", "release", "dist" }
 
 project "tests"
@@ -24,9 +24,6 @@ project "tests"
 
     filter { "system:windows" }
         links { "stdc++", "winmm", "gdi32" }
-
-    -- filter { "system:linux" }
-    --     links { "m", "png" }
 
     filter "configurations:debug"
         defines { "DEBUG" }
