@@ -119,17 +119,21 @@ public:
     using index_type = Index<T>;
     using size_type = int;
 
+    using iterator = T*;
+    using const_iterator = const T*;
+    using reverse_iterator = std::reverse_iterator<iterator>;
+    using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+
     Span (T* __begin, size_type length)
     : _begin(__begin), _end(__begin + length) {}
 
     Span (T* __begin, T* __end)
     : _begin(__begin), _end(__end) {}
 
-    T* begin () { return _begin; }
-    T* end () { return _end; }
-
-    const T* begin () const { return _begin; }
-    const T* end () const { return _end; }
+    constexpr T& front () { return *_begin; }
+    constexpr T& back () { return *(_end - 1); }
+    constexpr const T& front () const { return *_begin; }
+    constexpr const T& back () const { return *(_end - 1); }
 
     T& at (index_type index) {
         ASSERT_IN_RANGE(index, 0, size() - 1);
@@ -139,11 +143,24 @@ public:
         ASSERT_IN_RANGE(index, 0, size() - 1);
         return _begin[index];
     }
+    T& operator[] (index_type index) { return at(index); }
+    const T& operator[] (index_type index) const { return at(index); }
 
-    T& operator[] (index_type index) { return _begin[index]; }
-    const T& operator[] (index_type index) const { return _begin[index]; }
+    iterator begin () { return _begin; }
+    iterator end () { return _end; }
+    const const_iterator begin () const { return _begin; }
+    const const_iterator end () const { return _end; }
+
+    reverse_iterator rbegin () { return std::make_reverse_iterator(begin()); }
+    reverse_iterator rend () { return std::make_reverse_iterator(end()); }
+    const_reverse_iterator rbegin () const { return std::make_reverse_iterator(end()); }
+    const_reverse_iterator rend () const { return std::make_reverse_iterator(begin()); }
 
     size_type size () const { return _end - _begin; }
+    bool empty () const { return _begin == _end; }
+
+    T* data () { return _begin; }
+    const T* data () const { return _begin; }
 
 private:
 
@@ -156,7 +173,7 @@ private:
 template <class _Vec, class... _Args>
 concept UnorderedVectorC =
 requires (_Vec vec, typename _Vec::index_type index, typename _Vec::value_type val, _Args... args) {
-    { vec.emplace_back(args...) } -> std::same_as<std::pair<typename _Vec::index_type, typename _Vec::value_type&>>;
+    { vec.emplace_back(args...) } -> std::same_as<typename _Vec::index_type>;
     { vec.push_back(val) } -> std::same_as<typename _Vec::index_type>;
     vec.remove(index);
     { vec.at(index) } -> std::convertible_to<typename _Vec::value_type>;

@@ -12,14 +12,12 @@ namespace luna {
 
 template <
     class T,
-    ArrayChunk _Pool = HeapArrayChunk<T>,
-    ArrayChunk _SparsePool = HeapArrayChunk<DenseIndex>,
-    ArrayChunk _DensePool = HeapArrayChunk<SparseIndex>>
-class BasicSparseVector {
+    GenericChunkC<T, DenseIndex, SparseIndex> _GenericChunk = GenericHeapChunk>
+class SparseVector {
 public:
 
-    using vector_type = BasicVector<T, _Pool>;
-    using sparse_set_type = BasicSparseSet<_SparsePool, _DensePool>;
+    using vector_type = Vector<T, _GenericChunk>;
+    using sparse_set_type = BasicSparseSet<_GenericChunk>;
 
     using value_type = T;
     using size_type = index_t;
@@ -34,13 +32,13 @@ public:
     }
 
     template <typename... Args>
-    std::pair<index_type, value_type&> emplace_back (Args&&... args) {
-        return { _sset.push(), _elts.emplace_back(std::forward<Args>(args)...) };
+    index_type emplace_back (Args&&... args) {
+        _elts.emplace_back(std::forward<Args>(args)...);
+        return _sset.push();
     }
 
     void remove (index_type index) {
-        std::swap(_elts[_sset.find(index)], _elts.back());
-        _elts.pop_back();
+        _elts.remove(_sset.find(index));
         _sset.remove(index);
     }
 
@@ -78,17 +76,6 @@ private:
     sparse_set_type _sset;
 
 };
-
-
-
-template <class T, class _Alloc = std::allocator<T>>
-using SparseVector = BasicSparseVector<
-    T,
-    HeapArrayChunk<T, _Alloc>,
-    HeapArrayChunk<DenseIndex>,
-    HeapArrayChunk<SparseIndex>
->;
-
 
 
 } // namespace luna

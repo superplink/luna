@@ -33,12 +33,12 @@ struct DenseIndex {
 };
 
 
-template <ArrayChunk _SparsePool = HeapArrayChunk<DenseIndex>, ArrayChunk _DensePool = HeapArrayChunk<SparseIndex>>
+template <GenericChunkC<DenseIndex, SparseIndex> _GenericChunk = GenericHeapChunk>
 class BasicSparseSet {
 public:
 
-    using sparse_vector_type = BasicVector<DenseIndex, _SparsePool>;
-    using dense_vector_type = BasicVector<SparseIndex, _DensePool>;
+    using sparse_vector_type = Vector<DenseIndex, GenericHeapChunk>;
+    using dense_vector_type = Vector<SparseIndex, GenericHeapChunk>;
 
     using size_type = index_t;
 

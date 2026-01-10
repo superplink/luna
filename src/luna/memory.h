@@ -42,7 +42,7 @@ concept ArrayChunk = requires (T pool, typename T::size_type count, typename T::
     pool.construct(index, args...);
     pool.destroy(index);
     pool.clear();
-    pool.reserve_move(count, UninitializedMove{});
+    pool.reserve_move(count, count, UninitializedMove{});
 
     { pool.size() } -> std::convertible_to<typename T::size_type>;
     { pool.begin() } -> std::convertible_to<typename T::value_type*>;
@@ -110,11 +110,11 @@ public:
     }
 
     template <MoveC<T*, T*> _Move>
-    void reserve_move (size_type count, const _Move& mv = UninitializedMove{}) {
+    void reserve_move (size_type prev_count, size_type count, const _Move& mv = UninitializedMove{}) {
         if (count <= size()) return;
         T* new_first = alloc_traits::allocate(_alloc, count);
         if (_first) {
-            mv.move(_first, _last, new_first);
+            mv.move(_first, _first + prev_count, new_first);
             alloc_traits::deallocate(_alloc, _first, size());
         }
         _first = new_first;
@@ -186,7 +186,7 @@ public:
     // does nothing
     void deallocate () {}
     // does nothing
-    void reserve_move (size_type count) {
+    void reserve_move (size_type prev_count, size_type count) {
         ASSERT_IN_RANGE(count, 0, size() - 1);
     }
 
@@ -265,11 +265,11 @@ public:
     }
 
     template <MoveC<T*, T*> _Move>
-    void reserve_move (size_type count, const _Move& mv = UninitializedMove{}) {
+    void reserve_move (size_type prev_count, size_type count, const _Move& mv = UninitializedMove{}) {
         if (count <= size()) return;
         if (count <= _InlineSize) return;
         T* new_first = alloc_traits::allocate(_alloc, count);
-        mv.move(begin(), end(), new_first);
+        mv.move(begin(), begin() + prev_count, new_first);
         if (!is_compact()) {
             alloc_traits::deallocate(_alloc, _vec, _size);
         }
@@ -342,26 +342,23 @@ public:
 
     PushArrayChunk ()
     : _pool()
-    , _end(_pool.begin()) {}
+    , _size(0) {}
 
     void allocate (size_type count) {
         _pool.allocate(count);
-        _end = _pool.begin();
     }
     void deallocate () {
         _pool.deallocate();
-        _end = _pool.begin();
     }
     void clear () {
         _pool.clear();
-        _end = _pool.begin();
+        _size = 0;
     }
 
     template <MoveC<T*, T*> _Move = UninitializedMove>
     void reserve_move (size_type count, const _Move& mv = UninitializedMove{}) {
         size_type length = size();
-        _pool.reserve_move(count, mv);
-        _end = _pool.begin() + length;
+        _pool.reserve_move(length, count, mv);
     }
 
     template <class... _Args>
@@ -382,20 +379,20 @@ public:
 
     // returns pointer to the next element, does not call constructor
     T* push_back (size_type count = 1) {
-        T* prev_end = _end;
-        _end += count;
-        ASSERT_IN_RANGE(_end, _pool.begin(), _pool.end());
+        T* prev_end = end();
+        _size += count;
+        ASSERT_IN_RANGE(_size, 0, _pool.size());
         return prev_end;
     }
     // returns pointer to the prev element, does not call destructor
     T* pop_back (size_type count = 1) {
-        _end -= count;
-        ASSERT_IN_RANGE(_end, _pool.begin(), _pool.end());
-        return _end;
+        _size -= count;
+        ASSERT_IN_RANGE(_size, 0, _pool.size());
+        return end();
     }
 
     size_type size () const {
-        return _end - _pool.begin();
+        return _size;
     }
 
     size_type capacity () const {
@@ -403,12 +400,12 @@ public:
     }
 
     T* begin () { return _pool.begin(); }
-    T* end () { return _end; }
+    T* end () { return _pool.begin() + _size; }
     T* data () { return _pool.data(); }
     T* data_end () { return _pool.end(); }
 
     const T* begin () const { return _pool.begin(); }
-    const T* end () const { return _end; }
+    const T* end () const { return _pool.begin() + _size; }
     const T* data () const { return _pool.data(); }
     const T* data_end () const { return _pool.end(); }
 
@@ -420,24 +417,54 @@ public:
     }
 
     bool is_full () const {
-        return _end == _pool.end();
+        return _size == _pool.size();
     }
 
     void set_full () {
-        _end = _pool.end();
+        _size = _pool.size();
     }
 
-    void set_end (T* __end) {
-        ASSERT_IN_RANGE(__end, _pool.begin(), _pool.end());
-        _end = __end;
+    void set_size (size_type __size) {
+        _size = __size;
     }
+
+    // void set_end (T* __end) {
+    //     ASSERT_IN_RANGE(__end, _pool.begin(), _pool.end());
+    //     _end = __end;
+    // }
 
 private:
 
     pool_type _pool;
-    T* _end;
+    size_type _size;
 
 };
+
+
+
+template <class _ChunkT, class... T>
+concept GenericChunkC = requires {
+    requires (ArrayChunk<typename _ChunkT::template type<T>> && ...);
+};
+
+struct GenericHeapChunk {
+    template <class T>
+    using type = HeapArrayChunk<T, std::allocator<T>>;
+};
+template <index_t _Len>
+struct GenericInplaceChunk {
+    template <class T>
+    using type = InplaceArrayChunk<T, _Len, std::allocator<T>>;
+};
+template <index_t _Len>
+struct GenericCompactChunk {
+    template <class T>
+    using type = CompactArrayChunk<T, _Len, std::allocator<T>>;
+};
+
+
+template <class _ChunkT, class T>
+using GenericChunkType = typename _ChunkT::template type<T>;
 
 
 

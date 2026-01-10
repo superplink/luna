@@ -23,7 +23,7 @@ struct BucketElt {
 };
 
 
-template <ArrayChunk _Pool = HeapArrayChunk<index_t>>
+template <GenericChunkC<index_t> _GenericChunk = GenericHeapChunk>
 class BasicBucketVector {
 public:
 
@@ -84,8 +84,8 @@ private:
         }
     }
 
-    BasicVector<size_type, _Pool> _bucket_roots;
-    BasicVector<size_type, _Pool> _bucket_next;
+    Vector<size_type, _GenericChunk> _bucket_roots;
+    Vector<size_type, _GenericChunk> _bucket_next;
 
 };
 
@@ -97,12 +97,11 @@ template <
     class T,
     HasherC<T> _Hasher = BasicHasher<T>,
     CompareC<T, T> _Equal = BasicCmp<T>,
-    ArrayChunk _Pool = HeapArrayChunk<T>,
-    ArrayChunk _BucketPool = HeapArrayChunk<index_t>>
+    GenericChunkC<T, index_t> _GenericChunk = GenericHeapChunk>
 class Set {
 public:
 
-    using container_type = DenseVector<T, _Pool>;
+    using container_type = DenseVector<T, _GenericChunk>;
     using size_type = index_t;
     using index_type = Index<T>;
     using hasher = _Hasher;
@@ -116,12 +115,10 @@ public:
         class __Val,
         HasherC<__Key> __Hasher,
         CompareC<__Key, __Key> __Equal,
-        ArrayChunk __KeyPool,
-        ArrayChunk __ValPool,
-        ArrayChunk __BucketPool>
+        GenericChunkC<__Key, __Val, index_t> __GenericChunk>
     friend class Map;
 
-    Set (size_type __bucket_count = 101, size_type __max_depth = 4, size_type __resize_scaler = 4)
+    Set (size_type __bucket_count = 101, size_type __max_depth = 4, size_type __resize_scaler = 8)
     : _max_depth(__max_depth), _resize_scaler(__resize_scaler) {
         _buckets.resize_buckets(__bucket_count);
     }
@@ -216,7 +213,7 @@ private:
         return bucket_elt;
     }
 
-    BasicBucketVector<_BucketPool> _buckets;
+    BasicBucketVector<_GenericChunk> _buckets;
     container_type _elts;
     
     size_type _max_depth = 4;

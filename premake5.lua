@@ -31,10 +31,10 @@ project "tests"
 
     filter "configurations:release"
         defines { "DEBUG" }
-        optimize "On"
+        optimize "Speed"
 
     filter "configurations:dist"
         defines { "NDEBUG" }
-        optimize "On"
+        optimize "Speed"
 
 

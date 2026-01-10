@@ -77,9 +77,7 @@ template <
     class _Val,
     HasherC<_Key> _Hasher = BasicHasher<_Key>,
     CompareC<_Key, _Key> _Equal = BasicCmp<_Key>,
-    ArrayChunk _KeyPool = HeapArrayChunk<_Key>,
-    ArrayChunk _ValPool = HeapArrayChunk<_Val>,
-    ArrayChunk _BucketPool = HeapArrayChunk<index_t>>
+    GenericChunkC<_Key, _Val, index_t> _GenericChunk = GenericHeapChunk>
 class Map {
 public:
 
@@ -98,7 +96,7 @@ public:
     std::pair<index_type, bool> emplace_ex (const _Hasher& hash, const _Equal& cmp, const _Key& key, _Args&&... args) {
         std::pair<size_type, bool> result = _keys.insert(key, hash, cmp);
         if (!result.second) return result;
-        index_type index = _vals.emplace_back(std::forward<_Args>(args)...).first;
+        index_type index = _vals.emplace_back(std::forward<_Args>(args)...);
         return std::make_pair(index, true);
     }
     template <class... _Args>
@@ -189,12 +187,10 @@ public:
 
 private:
 
-    Set<_Key, _Hasher, _Equal, _KeyPool, _BucketPool> _keys;
-    DenseVector<_Val, _ValPool> _vals;
+    Set<_Key, _Hasher, _Equal, _GenericChunk> _keys;
+    DenseVector<_Val, _GenericChunk> _vals;
 
 };
-
-
 
 
 } // namespace luna

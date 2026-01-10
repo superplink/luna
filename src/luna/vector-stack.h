@@ -12,30 +12,89 @@ struct SubArray {
 };
 
 
+
+template <class T>
+class VectorStackIterator {
+public:
+
+    using size_type = index_t;
+    using value_type = T;
+    using reference = Span<T>;
+    using pointer = T*;
+    using difference_type = ptrdiff_t;
+
+    constexpr VectorStackIterator () {}
+
+    constexpr VectorStackIterator (T* __data = nullptr, SubArray* __sub_array = nullptr)
+    : _data(__data), _sub_array(__sub_array) {}
+
+    constexpr reference operator* () const { return Span<T>(_data, _sub_array->size); }
+    // constexpr pointer operator-> () const { return _data; }
+
+    constexpr VectorStackIterator& operator++ () {
+        _data += _sub_array->size;
+        ++_sub_array;
+        return *this;
+    }
+    constexpr VectorStackIterator operator++ (int) {
+        VectorStackIterator a(_data, _sub_array);
+        operator++();
+        return a;
+    }
+
+    constexpr VectorStackIterator& operator-- () {
+        --_sub_array;
+        _data -= _sub_array->size;
+        return *this;
+    }
+    constexpr VectorStackIterator operator-- (int) {
+        VectorStackIterator a(_data, _sub_array);
+        operator--();
+        return a;
+    }
+
+    constexpr bool operator== (const VectorStackIterator& a) const { return _sub_array == a._sub_array; }
+    constexpr bool operator!= (const VectorStackIterator& a) const { return _sub_array != a._sub_array; }
+    constexpr bool operator<  (const VectorStackIterator& a) const { return _sub_array <  a._sub_array; }
+    constexpr bool operator>  (const VectorStackIterator& a) const { return _sub_array >  a._sub_array; }
+    constexpr bool operator<= (const VectorStackIterator& a) const { return _sub_array <= a._sub_array; }
+    constexpr bool operator>= (const VectorStackIterator& a) const { return _sub_array >= a._sub_array; }
+
+private:
+
+    T* _data;
+    SubArray* _sub_array;
+
+};
+
+
+
 /**
  * @brief An implimentation of a 2D jagged array where you can only push or pop
  * elements from the top most vector, allowing them to be easily stored in
  * contiguous memory
  * 
  * @tparam T 
- * @tparam _Chunk 
+ * @tparam _GenericChunk 
  */
 template <
     class T,
-    ArrayChunk _Chunk = HeapArrayChunk<T>,
-    ArrayChunk _SizeChunk = HeapArrayChunk<SubArray>>
+    GenericChunkC<T, SubArray> _GenericChunk = GenericHeapChunk>
 class VectorStack {
 public:
 
     using size_type = index_t;
     using index_type = Index<Span<T>>;
 
+    using iterator = VectorStackIterator<T>;
+    using const_iterator = VectorStackIterator<const T>;
+
     void push_vector () {
-        _sizes.push_back({_elts.size(), 0});
+        _sub_arrays.push_back({_elts.size(), 0});
     }
     void pop_vector () {
-        _elts.resize(_elts.size() - _sizes.back());
-        _sizes.pop_back();
+        _elts.resize(_elts.size() - _sub_arrays.back().size);
+        _sub_arrays.pop_back();
     }
 
     void push_back (const T& val) {
@@ -66,10 +125,22 @@ public:
     Span<T> operator[] (index_type index) { return at(index); }
     const Span<T> operator[] (index_type index) const { return at(index); }
 
+    size_type size () const { return _sub_arrays.size(); }
+
+    Span<T> front () { return Span<T>(_elts.begin(), _sub_arrays.front().size); }
+    Span<T> back () { return Span<T>(_elts.begin() + _sub_arrays.back().index, _sub_arrays.front().size); }
+    const Span<T> front () const { return Span<T>(_elts.begin(), _sub_arrays.front().size); }
+    const Span<T> back () const { return Span<T>(_elts.begin() + _sub_arrays.back().index, _sub_arrays.front().size); }
+
+    iterator begin () { return iterator(_elts.begin(), _sub_arrays.begin()); }
+    iterator end () { return iterator(_elts.end(), _sub_arrays.end()); }
+    const_iterator begin () const { return const_iterator(_elts.begin(), _sub_arrays.begin()); }
+    const_iterator end () const { return const_iterator(_elts.end(), _sub_arrays.end()); }
+
 private:
 
-    BasicVector<SubArray, _SizeChunk> _sub_arrays;
-    BasicVector<T, _Chunk> _elts;
+    Vector<SubArray, _GenericChunk> _sub_arrays;
+    Vector<T, _GenericChunk> _elts;
 
 };
 

@@ -18,6 +18,4 @@ make
 ```
 
 ## Performance
-I have done some early testing...
-
-I have used this in some of my other projects, including...
+The hash table performs around 2x faster with insertion, 2x faster with lookups, 10x faster with deletions, and around 20x faster with iteration.

@@ -192,7 +192,6 @@ struct RemoveChainUninitializedMove {
     _ForwardIt move (_InputIt first, _InputIt last, _ForwardIt result) const {
         size_type size = last - first; 
         _ForwardIt result_end = result + size;
-        assert(last - first == _remove_chain.size());
         for (size_type i = 0; i < size; i++) {
             if (_remove_chain[i] == nullindex) {
                 new(result) T(std::move(*first));
@@ -207,7 +206,6 @@ struct RemoveChainUninitializedMove {
     _ForwardIt copy (_InputIt first, _InputIt last, _ForwardIt result) const {
         size_type size = last - first; 
         _ForwardIt result_end = result + size;
-        assert(last - first == _remove_chain.size());
         for (size_type i = 0; i < size; i++) {
             if (_remove_chain[i] == nullindex) {
                 new(result) T(*first);
@@ -217,20 +215,20 @@ struct RemoveChainUninitializedMove {
         }
         return result_end;
     }
-
-    Span<size_type> _remove_chain;
+    
+    size_type* _remove_chain;
 };
 
 
 
-template <class T, ArrayChunk _Pool = HeapArrayChunk<T>>
+template <class T, GenericChunkC<T> _GenericChunk = GenericHeapChunk>
 class DenseVector {
 public:
 
     using value_type = T;
     using size_type = index_t;  
     using index_type = Index<T>;
-    using pool_type = PushArrayChunk<T, _Pool>;
+    using pool_type = PushArrayChunk<T, GenericChunkType<_GenericChunk, T>>;
 
     using iterator = RemoveChainValueIterator<T*>;
     using const_iterator = RemoveChainValueIterator<const T*>;
@@ -243,16 +241,13 @@ public:
         class __Val,
         HasherC<__Key> __Hasher,
         CompareC<__Key, __Key> __Equal,
-        ArrayChunk __KeyPool,
-        ArrayChunk __ValPool,
-        ArrayChunk __BucketPool>
+        GenericChunkC<__Key, __Val, index_t> __GenericChunk>
     friend class Map;
 
     DenseVector () {}
 
     template <ArrayChunk _OtherPool>
     DenseVector (const DenseVector<T, _OtherPool>& other) {
-        clear();
         reserve(other.capacity());
         _pool.push_back(other._pool.size());
         _get_mv().copy(other.begin(), other.end(), _pool.begin());
@@ -260,7 +255,6 @@ public:
 
     template <ArrayChunk _OtherPool>
     DenseVector (DenseVector<T, _OtherPool>&& other) {
-        clear();
         reserve(other.capacity());
         _pool.push_back(other._pool.size());
         _get_mv().move(other.begin(), other.end(), _pool.begin());
@@ -268,7 +262,6 @@ public:
 
     template <ArrayChunk _OtherPool>
     DenseVector& operator= (const DenseVector<T, _OtherPool>& other) {
-        clear();
         reserve(other.capacity());
         _pool.push_back(other._pool.size());
         _get_mv().copy(other.begin(), other.end(), _pool.begin());
@@ -277,7 +270,6 @@ public:
 
     template <ArrayChunk _OtherPool>
     DenseVector& operator= (DenseVector<T, _OtherPool>&& other) {
-        clear();
         reserve(other.capacity());
         _pool.push_back(other._pool.size());
         _get_mv().move(other.begin(), other.end(), _pool.begin());
@@ -290,22 +282,20 @@ public:
 
 
     template <class... _Args>
-    std::pair<index_type, T&> emplace_back (_Args&&... args) {
-        if (_removed.is_full()) {
-            if (_pool.is_full()) {
-                reserve(std::max(_pool.size() * 2, 1));
-            }
-            T* ptr = _pool.push_back();
-            _pool.construct(ptr, std::forward<_Args>(args)...);
-            return std::pair<index_type, T&>(_removed.push(), *ptr);
-        }
+    index_type emplace_back (_Args&&... args) {
         index_type index = _removed.push();
+        if (index == _removed.size() - 1) {
+            if (_pool.is_full()) {
+                _pool.reserve_move(std::max(_pool.size() * 2, 1));
+            }
+            _pool.push_back();
+        }
         _pool.construct(index, std::forward<_Args>(args)...);
-        return std::pair<index_type, T&>(index, _pool.at(index));
+        return index;
     }
 
     index_type push_back (const T& val) {
-        return emplace_back(val).first;
+        return emplace_back(val);
     }
 
     void remove (index_type index) {
@@ -372,7 +362,7 @@ public:
     }
 
     RemoveChainUninitializedMove<T> _get_mv () {
-        return RemoveChainUninitializedMove<T>{ Span<size_type>(_removed.begin(), _removed.end()) };
+        return RemoveChainUninitializedMove<T>{ _removed.begin() };
     }
 
     pool_type _pool;
@@ -380,6 +370,7 @@ public:
 
 };
 
+static_assert(UnorderedVectorC<DenseVector<int>>);
 
 
 // template <class T, class U, ArrayChunk _P1, ArrayChunk _P2>
