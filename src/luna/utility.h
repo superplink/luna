@@ -46,8 +46,8 @@ inline constexpr T inv_lerp (T a, T b, U v) {
  * @param v remapped value
  * @return constexpr T 
  */
-template <typename T, typename U>
-inline constexpr T remap (T i_min, T i_max, T o_min, T o_max, U v) {
+template <typename T, typename U, typename V>
+inline constexpr U remap (T i_min, T i_max, U o_min, U o_max, V v) {
     return lerp(o_min, o_max, inv_lerp(i_min, i_max, v));
 }
 
@@ -59,7 +59,7 @@ inline constexpr T clamp (T value, T min, T max) {
 
 template <typename T, typename U>
 inline constexpr T smooth_lerp (T a, T b, U r, U dt) {
-    return b+(a-b)*std::pow(r, dt);
+    return b + (a - b) * std::pow(r, dt);
 }
 
 template <typename T>
