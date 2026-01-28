@@ -71,7 +71,6 @@ public:
         std::swap(other._pool, _pool);
     }
 
-
     template <class... _Args>
     T& emplace_back (_Args&&... args) {
         if (_pool.is_full()) {
@@ -84,6 +83,22 @@ public:
 
     void push_back (const T& val) {
         emplace_back(val);
+    }
+    
+    template <class... _Args>
+    T& emplace (size_type index, _Args&&... args) {
+        if (_pool.is_full()) {
+            reserve(std::max(size() * 2, 1));
+        }
+        _pool.push_back();
+        for (size_type i = size() - 1; i-- > index;) {
+            _pool.construct(i + 1, std::move(_pool.at(i)));
+        }
+        _pool.construct(index, std::forward<_Args>(args)...);
+        return _pool.at(index);
+    }
+    void insert (size_type index, const T& val) {
+        emplace(index, val);
     }
 
     void resize (size_type count, const T& val = {}) {

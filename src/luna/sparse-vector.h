@@ -65,6 +65,9 @@ public:
     auto ipairs () {
         return std::views::zip(_sset.template indexes<T>(), _elts);
     }
+    auto ipairs () const {
+        return std::views::zip(_sset.template indexes<T>(), _elts);
+    }
 
     index_type next_index () const {
         return _sset.next_index();
