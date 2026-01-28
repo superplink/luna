@@ -52,6 +52,16 @@ concept ArrayChunk = requires (T pool, typename T::size_type count, typename T::
     { pool.at(index) } -> std::convertible_to<typename T::value_type>;
 };
 
+template <class _Chunk, class T>
+concept ArrayChunkTypeC = ArrayChunk<_Chunk>
+    && std::same_as<typename _Chunk::value_type, T>;
+
+
+template <class T, class U>
+concept MatchingChunkC = ArrayChunk<T>
+    && ArrayChunk<U>
+    && std::same_as<typename T::value_type, typename U::value_type>;
+
 
 // an inline array that does not call constructors or destructors
 template <class T, index_t _Len>
@@ -332,13 +342,15 @@ private:
 
 
 
-template <class T, ArrayChunk _Pool = HeapArrayChunk<T>>
+template <ArrayChunk _Chunk>
 class PushArrayChunk {
 public:
 
-    using pool_type = _Pool;
+    using chunk_type = _Chunk;
+    using value_type = typename chunk_type::value_type;
     using size_type = index_t;
-    using allocator = typename _Pool::allocator;
+    using allocator = typename chunk_type::allocator;
+    using index_type = Index<value_type>;
 
     PushArrayChunk ()
     : _pool()
@@ -355,37 +367,37 @@ public:
         _size = 0;
     }
 
-    template <MoveC<T*, T*> _Move = UninitializedMove>
+    template <MoveC<value_type*, value_type*> _Move = UninitializedMove>
     void reserve_move (size_type count, const _Move& mv = UninitializedMove{}) {
         size_type length = size();
         _pool.reserve_move(length, count, mv);
     }
 
     template <class... _Args>
-    void construct (Index<T> index, _Args&&... args) {
+    void construct (Index<value_type> index, _Args&&... args) {
         _pool.construct(index, std::forward<_Args>(args)...);
     }
-    void destroy (Index<T> index) {
+    void destroy (Index<value_type> index) {
         _pool.destroy(index);
     }
 
     template <class... _Args>
-    void construct (T* ptr, _Args&&... args) {
+    void construct (value_type* ptr, _Args&&... args) {
         _pool.construct(ptr, std::forward<_Args>(args)...);
     }
-    void destroy (T* ptr) {
+    void destroy (value_type* ptr) {
         _pool.destroy(ptr);
     }
 
     // returns pointer to the next element, does not call constructor
-    T* push_back (size_type count = 1) {
-        T* prev_end = end();
+    value_type* push_back (size_type count = 1) {
+        value_type* prev_end = end();
         _size += count;
         ASSERT_IN_RANGE(_size, 0, _pool.size());
         return prev_end;
     }
     // returns pointer to the prev element, does not call destructor
-    T* pop_back (size_type count = 1) {
+    value_type* pop_back (size_type count = 1) {
         _size -= count;
         ASSERT_IN_RANGE(_size, 0, _pool.size());
         return end();
@@ -399,20 +411,20 @@ public:
         return _pool.size();
     }
 
-    T* begin () { return _pool.begin(); }
-    T* end () { return _pool.begin() + _size; }
-    T* data () { return _pool.data(); }
-    T* data_end () { return _pool.end(); }
+    value_type* begin () { return _pool.begin(); }
+    value_type* end () { return _pool.begin() + _size; }
+    value_type* data () { return _pool.data(); }
+    value_type* data_end () { return _pool.end(); }
 
-    const T* begin () const { return _pool.begin(); }
-    const T* end () const { return _pool.begin() + _size; }
-    const T* data () const { return _pool.data(); }
-    const T* data_end () const { return _pool.end(); }
+    const value_type* begin () const { return _pool.begin(); }
+    const value_type* end () const { return _pool.begin() + _size; }
+    const value_type* data () const { return _pool.data(); }
+    const value_type* data_end () const { return _pool.end(); }
 
-    T& at (Index<T> index) {
+    value_type& at (index_type index) {
         return _pool.at(index);
     }
-    const T& at (Index<T> index) const {
+    const value_type& at (index_type index) const {
         return _pool.at(index);
     }
 
@@ -435,36 +447,10 @@ public:
 
 private:
 
-    pool_type _pool;
+    chunk_type _pool;
     size_type _size;
 
 };
-
-
-
-template <class _ChunkT, class... T>
-concept GenericChunkC = requires {
-    requires (ArrayChunk<typename _ChunkT::template type<T>> && ...);
-};
-
-struct GenericHeapChunk {
-    template <class T>
-    using type = HeapArrayChunk<T, std::allocator<T>>;
-};
-template <index_t _Len>
-struct GenericInplaceChunk {
-    template <class T>
-    using type = InplaceArrayChunk<T, _Len, std::allocator<T>>;
-};
-template <index_t _Len>
-struct GenericCompactChunk {
-    template <class T>
-    using type = CompactArrayChunk<T, _Len, std::allocator<T>>;
-};
-
-
-template <class _ChunkT, class T>
-using GenericChunkType = typename _ChunkT::template type<T>;
 
 
 

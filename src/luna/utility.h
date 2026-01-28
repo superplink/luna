@@ -67,36 +67,6 @@ inline constexpr int sign (T a) {
     return a > 0 ? 1 : (a < 0 ? -1 : 0);
 }
 
-template <typename T>
-inline constexpr T div_floor (T a, T b) { return a/b - (a%b!=0 && (a^b)<0); }
-template <typename T>
-inline constexpr T div_ceil (T a, T b)  { return a/b + (a%b!=0 && (a^b)>0); }
-
-inline constexpr float div_floor (float a, float b) { return std::floor(a/b); }
-inline constexpr float div_ceil (float a, float b)  { return std::ceil(a/b); }
-inline constexpr float div_floor (double a, double b) { return std::floor(a/b); }
-inline constexpr float div_ceil (double a, double b)  { return std::ceil(a/b); }
-
-
-// template <class ItrFrom, class ItrTo>
-// void smart_uninitialized_move (ItrFrom begin, ItrFrom end, ItrTo to) {
-//     using value_type = decltype(*begin);
-//     if constexpr (std::is_trivially_copyable_v<value_type>) {
-//         std::uninitialized_copy(begin, end, to);
-//     } else if constexpr (std::is_move_constructible_v<value_type>) {
-//         pointer to = new_arr;
-//         for (pointer from = _first; from != _middle; from++, to++) {
-//             alloc_traits::construct(_alloc, to, std::move(*from));
-//         }
-//     } else {
-//         std::uninitialized_copy(_first, _middle, new_arr);
-//         for (pointer ptr = _first; ptr != _middle; ptr++) {
-//             alloc_traits::destroy(_alloc, ptr);
-//         }
-//     }
-// }
-
-
 
 } // namespace luna
 

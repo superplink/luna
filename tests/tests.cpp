@@ -282,12 +282,6 @@ void test_vector () {
 }
 
 
-template <GenericChunkC<int, float> T>
-void asdf () {
-    using chunk_type = GenericChunkType<T, int>;
-}
-
-
 int main () {
     // test_map();
     // test_unordered_vectors();

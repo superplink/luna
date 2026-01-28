@@ -7,47 +7,48 @@
 namespace luna {
     
 
-struct SparseIndex {
-    constexpr SparseIndex (index_t n = nullindex) : index(n) {}
-    constexpr SparseIndex (nullindex_t) : index(nullindex) {}
-    template <class T>
-    constexpr SparseIndex (Index<T> n) : index(n) {}
+// struct SparseIndex {
+//     constexpr SparseIndex (index_t n = nullindex) : index(n) {}
+//     constexpr SparseIndex (nullindex_t) : index(nullindex) {}
+//     template <class T>
+//     constexpr SparseIndex (Index<T> n) : index(n) {}
 
-    constexpr operator index_t () { return index; }
-    template <class T>
-    constexpr operator Index<T> () { return index; }
+//     constexpr operator index_t () { return index; }
+//     template <class T>
+//     constexpr operator Index<T> () { return index; }
     
-    index_t index;
-};
-struct DenseIndex {
-    constexpr DenseIndex (index_t n = nullindex) : index(n) {}
-    constexpr DenseIndex (nullindex_t) : index(nullindex) {}
-    template <class T>
-    constexpr DenseIndex (Index<T> n) : index(n) {}
+//     index_t index;
+// };
+// struct DenseIndex {
+//     constexpr DenseIndex (index_t n = nullindex) : index(n) {}
+//     constexpr DenseIndex (nullindex_t) : index(nullindex) {}
+//     template <class T>
+//     constexpr DenseIndex (Index<T> n) : index(n) {}
 
-    constexpr operator index_t () { return index; }
-    template <class T>
-    constexpr operator Index<T> () { return index; }
+//     constexpr operator index_t () { return index; }
+//     template <class T>
+//     constexpr operator Index<T> () { return index; }
     
-    index_t index;
-};
+//     index_t index;
+// };
 
 
-template <GenericChunkC<DenseIndex, SparseIndex> _GenericChunk = GenericHeapChunk>
+template <ArrayChunkTypeC<index_t> _Chunk = HeapArrayChunk<index_t>>
 class BasicSparseSet {
 public:
 
-    using sparse_vector_type = Vector<DenseIndex, GenericHeapChunk>;
-    using dense_vector_type = Vector<SparseIndex, GenericHeapChunk>;
+    using sparse_vector_type = BasicVector<_Chunk>;
+    using dense_vector_type = BasicVector<_Chunk>;
 
     using size_type = index_t;
+    using value_type = index_t;
 
 
     BasicSparseSet () {}
     ~BasicSparseSet () = default;
 
 
-    SparseIndex push () {
+    size_type push () {
         size_type prev_len = _len;
         _len++;
         if (prev_len == _dense.size()) {
@@ -59,7 +60,7 @@ public:
         return _dense[prev_len];
     }
     
-    void remove (SparseIndex index) {
+    void remove (size_type index) {
         _len--;
         std::swap(_dense[_sparse[index]], _dense[_len]);
         _sparse[_dense[_sparse[index]]] = _sparse[index];
@@ -71,10 +72,10 @@ public:
         _dense.reserve(count);
     }
 
-    DenseIndex find (SparseIndex index) const {
+    size_type find (size_type index) const {
         return _sparse[index];
     }
-    SparseIndex index_of (DenseIndex index) const {
+    size_type index_of (size_type index) const {
         return _dense[index];
     }
 

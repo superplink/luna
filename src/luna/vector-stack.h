@@ -73,21 +73,20 @@ private:
  * @brief An implimentation of a 2D jagged array where you can only push or pop
  * elements from the top most vector, allowing them to be easily stored in
  * contiguous memory
- * 
- * @tparam T 
- * @tparam _GenericChunk 
  */
 template <
-    class T,
-    GenericChunkC<T, SubArray> _GenericChunk = GenericHeapChunk>
-class VectorStack {
+    ArrayChunk _Chunk,
+    ArrayChunkTypeC<SubArray> _SubArrChunk>
+class BasicVectorStack {
 public:
 
-    using size_type = index_t;
-    using index_type = Index<Span<T>>;
+    using value_type = typename _Chunk::value_type;
 
-    using iterator = VectorStackIterator<T>;
-    using const_iterator = VectorStackIterator<const T>;
+    using size_type = index_t;
+    using index_type = Index<Span<value_type>>;
+
+    using iterator = VectorStackIterator<value_type>;
+    using const_iterator = VectorStackIterator<const value_type>;
 
     void push_vector () {
         _sub_arrays.push_back({_elts.size(), 0});
@@ -97,12 +96,12 @@ public:
         _sub_arrays.pop_back();
     }
 
-    void push_back (const T& val) {
+    void push_back (const value_type& val) {
         _elts.push_back(val);
         _sub_arrays.back().size++;
     }
     template <class... _Args>
-    T& emplace_back (_Args&&... args) {
+    value_type& emplace_back (_Args&&... args) {
         return _elts.emplace_back(std::forward<_Args>(args)...);
     }
     void pop_back () {
@@ -110,27 +109,27 @@ public:
         _sub_arrays.back().size--;
     }
 
-    Span<T> at (index_type index) {
-        return Span<T>(
+    Span<value_type> at (index_type index) {
+        return Span<value_type>(
             _elts.begin() + _sub_arrays[(index_t)index].index,
             _sub_arrays[(index_t)index].size
         );
     }
-    const Span<T> at (index_type index) const {
-        return Span<T>(
+    const Span<value_type> at (index_type index) const {
+        return Span<value_type>(
             _elts.begin() + _sub_arrays[(index_t)index].index,
             _sub_arrays[(index_t)index].size
         );
     }
-    Span<T> operator[] (index_type index) { return at(index); }
-    const Span<T> operator[] (index_type index) const { return at(index); }
+    Span<value_type> operator[] (index_type index) { return at(index); }
+    const Span<value_type> operator[] (index_type index) const { return at(index); }
 
     size_type size () const { return _sub_arrays.size(); }
 
-    Span<T> front () { return Span<T>(_elts.begin(), _sub_arrays.front().size); }
-    Span<T> back () { return Span<T>(_elts.begin() + _sub_arrays.back().index, _sub_arrays.front().size); }
-    const Span<T> front () const { return Span<T>(_elts.begin(), _sub_arrays.front().size); }
-    const Span<T> back () const { return Span<T>(_elts.begin() + _sub_arrays.back().index, _sub_arrays.front().size); }
+    Span<value_type> front () { return Span<value_type>(_elts.begin(), _sub_arrays.front().size); }
+    Span<value_type> back () { return Span<value_type>(_elts.begin() + _sub_arrays.back().index, _sub_arrays.front().size); }
+    const Span<value_type> front () const { return Span<value_type>(_elts.begin(), _sub_arrays.front().size); }
+    const Span<value_type> back () const { return Span<value_type>(_elts.begin() + _sub_arrays.back().index, _sub_arrays.front().size); }
 
     iterator begin () { return iterator(_elts.begin(), _sub_arrays.begin()); }
     iterator end () { return iterator(_elts.end(), _sub_arrays.end()); }
@@ -139,10 +138,14 @@ public:
 
 private:
 
-    Vector<SubArray, _GenericChunk> _sub_arrays;
-    Vector<T, _GenericChunk> _elts;
+    BasicVector<_SubArrChunk> _sub_arrays;
+    BasicVector<_Chunk> _elts;
 
 };
+
+
+template <class T>
+using VectorStack = BasicVectorStack<HeapArrayChunk<T>, HeapArrayChunk<SubArray>>;
 
 
 

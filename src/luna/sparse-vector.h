@@ -11,22 +11,22 @@ namespace luna {
 
 
 template <
-    class T,
-    GenericChunkC<T, DenseIndex, SparseIndex> _GenericChunk = GenericHeapChunk>
-class SparseVector {
+    ArrayChunk _Chunk,
+    ArrayChunkTypeC<index_t> _IndexChunk>
+class BasicSparseVector {
 public:
 
-    using vector_type = Vector<T, _GenericChunk>;
-    using sparse_set_type = BasicSparseSet<_GenericChunk>;
+    using value_type = typename _Chunk::value_type;
+    using vector_type = BasicVector<_Chunk>;
+    using sparse_set_type = BasicSparseSet<_IndexChunk>;
 
-    using value_type = T;
     using size_type = index_t;
-    using index_type = Index<T>;
+    using index_type = Index<value_type>;
 
     using iterator = typename vector_type::iterator;
     using const_iterator = typename vector_type::const_iterator;
 
-    index_type push_back (const T& val) {
+    index_type push_back (const value_type& val) {
         _elts.push_back(val);
         return _sset.push();
     }
@@ -42,11 +42,11 @@ public:
         _sset.remove(index);
     }
 
-    T& at (index_type index) { return _elts[_sset.find(index)]; }
-    const T& at (index_type index) const { return _elts[_sset.find(index)]; }
+    value_type& at (index_type index) { return _elts[_sset.find(index)]; }
+    const value_type& at (index_type index) const { return _elts[_sset.find(index)]; }
 
-    T& operator[] (index_type index) { return _elts[_sset.find(index)]; }
-    const T& operator[] (index_type index) const { return _elts[_sset.find(index)]; }
+    value_type& operator[] (index_type index) { return _elts[_sset.find(index)]; }
+    const value_type& operator[] (index_type index) const { return _elts[_sset.find(index)]; }
 
     void clear () {
         _elts.clear();
@@ -63,10 +63,10 @@ public:
     const_iterator end () const { return _elts.end(); }
 
     auto ipairs () {
-        return std::views::zip(_sset.template indexes<T>(), _elts);
+        return std::views::zip(_sset.template indexes<value_type>(), _elts);
     }
     auto ipairs () const {
-        return std::views::zip(_sset.template indexes<T>(), _elts);
+        return std::views::zip(_sset.template indexes<value_type>(), _elts);
     }
 
     index_type next_index () const {
@@ -79,6 +79,10 @@ private:
     sparse_set_type _sset;
 
 };
+
+
+template <class T>
+using SparseVector = BasicSparseVector<HeapArrayChunk<T>, HeapArrayChunk<index_t>>;
 
 
 } // namespace luna

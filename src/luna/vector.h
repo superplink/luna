@@ -9,50 +9,50 @@ namespace luna {
     
 
 
-template <class T, GenericChunkC<T> _GenericChunk = GenericHeapChunk>
-class Vector {
+template <ArrayChunk _Chunk>
+class BasicVector {
 public:
 
-    using value_type = T;
-    using size_type = index_t;  
-    using index_type = Index<T>;
-    using pool_type = PushArrayChunk<T, GenericChunkType<_GenericChunk, T>>;
+    using chunk_type = PushArrayChunk<_Chunk>;
+    using value_type = typename chunk_type::value_type;
+    using size_type = index_t;
+    using index_type = Index<value_type>;
 
-    using iterator = T*;
-    using const_iterator = const T*;
+    using iterator = value_type*;
+    using const_iterator = const value_type*;
     using reverse_iterator = std::reverse_iterator<iterator>;
     using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
-    Vector () {}
-    Vector (size_type count, const T& val = {}) {
+    BasicVector () {}
+    BasicVector (size_type count, const value_type& val = {}) {
         resize(count, val);
     }
 
-    template <GenericChunkC<T> _GC>
-    Vector (const Vector<T, _GC>& other) {
+    template <ArrayChunkTypeC<value_type> _OtherChunk>
+    BasicVector (const BasicVector<_OtherChunk>& other) {
         reserve(other.capacity());
         _pool.push_back(other.size());
         std::uninitialized_copy(other.begin(), other.end(), _pool.begin());
     }
 
-    template <GenericChunkC<T> _GC>
-    Vector (Vector<T, _GC>&& other) {
+    template <ArrayChunkTypeC<value_type> _OtherChunk>
+    BasicVector (BasicVector<_OtherChunk>&& other) {
         reserve(other.capacity());
         _pool.push_back(other.size());
         std::uninitialized_move(other.begin(), other.end(), _pool.begin());
         other._pool.deallocate();
     }
 
-    template <GenericChunkC<T> _GC>
-    Vector& operator= (const Vector<T, _GC>& other) {
+    template <ArrayChunkTypeC<value_type> _OtherChunk>
+    BasicVector& operator= (const BasicVector<_OtherChunk>& other) {
         reserve(other.capacity());
         _pool.push_back(other.size());
         std::uninitialized_copy(other.begin(), other.end(), _pool.begin());
         return *this;
     }
 
-    template <GenericChunkC<T> _GC>
-    Vector& operator= (Vector<T, _GC>&& other) {
+    template <ArrayChunkTypeC<value_type> _OtherChunk>
+    BasicVector& operator= (BasicVector<_OtherChunk>&& other) {
         reserve(other.capacity());
         _pool.push_back(other.size());
         std::uninitialized_move(other.begin(), other.end(), _pool.begin());
@@ -60,33 +60,33 @@ public:
         return *this;
     }
 
-    ~Vector () {
+    ~BasicVector () {
         for (auto it = rbegin(); it != rend(); it++) {
             _pool.destroy(&*it);
         }
         _pool.deallocate();
     }
 
-    void swap (Vector& other) {
+    void swap (BasicVector& other) {
         std::swap(other._pool, _pool);
     }
 
     template <class... _Args>
-    T& emplace_back (_Args&&... args) {
+    value_type& emplace_back (_Args&&... args) {
         if (_pool.is_full()) {
             reserve(std::max(size() * 2, 1));
         }
-        T* ptr = _pool.push_back();
+        value_type* ptr = _pool.push_back();
         _pool.construct(ptr, std::forward<_Args>(args)...);
         return *ptr;
     }
 
-    void push_back (const T& val) {
+    void push_back (const value_type& val) {
         emplace_back(val);
     }
     
     template <class... _Args>
-    T& emplace (size_type index, _Args&&... args) {
+    value_type& emplace (size_type index, _Args&&... args) {
         if (_pool.is_full()) {
             reserve(std::max(size() * 2, 1));
         }
@@ -97,11 +97,11 @@ public:
         _pool.construct(index, std::forward<_Args>(args)...);
         return _pool.at(index);
     }
-    void insert (size_type index, const T& val) {
+    void insert (size_type index, const value_type& val) {
         emplace(index, val);
     }
 
-    void resize (size_type count, const T& val = {}) {
+    void resize (size_type count, const value_type& val = {}) {
         if (count < size()) {
             for (size_type i = size(); i-- > count;) {
                 _pool.destroy(i);
@@ -109,7 +109,7 @@ public:
             _pool.set_size(count);
         } else if (count > size()) {
             reserve(count);
-            T* prev_end = _pool.end();
+            value_type* prev_end = _pool.end();
             _pool.set_full();
             std::uninitialized_fill(prev_end, _pool.end(), val);
         }
@@ -142,16 +142,16 @@ public:
         _pool.clear();
     }
 
-    T& at (Index<T> index) { return _pool.at(index); }
-    const T& at (Index<T> index) const { return _pool.at(index); }
-    T& operator[] (Index<T> index) { return _pool.at(index); }
-    const T& operator[] (Index<T> index) const { return _pool.at(index); }
+    value_type& at (index_type index) { return _pool.at(index); }
+    const value_type& at (index_type index) const { return _pool.at(index); }
+    value_type& operator[] (index_type index) { return _pool.at(index); }
+    const value_type& operator[] (index_type index) const { return _pool.at(index); }
 
-    T& front () { return *_pool.begin(); }
-    T& back () { return *(_pool.end() - 1); }
+    value_type& front () { return *_pool.begin(); }
+    value_type& back () { return *(_pool.end() - 1); }
 
-    const T& front () const { return *_pool.begin(); }
-    const T& back () const { return *(_pool.end() - 1); }
+    const value_type& front () const { return *_pool.begin(); }
+    const value_type& back () const { return *(_pool.end() - 1); }
 
     size_type size () const { return _pool.size(); }
     size_type capacity () const { return _pool.capacity(); }
@@ -166,8 +166,8 @@ public:
     const_reverse_iterator rbegin () const { return std::make_reverse_iterator(_pool.end()); }
     const_reverse_iterator rend () const { return std::make_reverse_iterator(_pool.begin()); }
 
-    T* data () { return _pool.data(); }
-    const T* data () const { return _pool.data(); }
+    value_type* data () { return _pool.data(); }
+    const value_type* data () const { return _pool.data(); }
 
     bool empty () const { return _pool.size() == 0; }
 
@@ -184,16 +184,18 @@ private:
         _pool.pop_back(remove_count);
     }
 
-    pool_type _pool;
+    chunk_type _pool;
 
 };
 
+template <class T, class _Alloc = std::allocator<T>>
+using Vector = BasicVector<HeapArrayChunk<T, _Alloc>>;
 
 template <class T, index_t _Len>
-using InplaceVector = Vector<T, GenericInplaceChunk<_Len>>;
+using InplaceVector = BasicVector<InplaceArrayChunk<T, _Len>>;
 
 template <class T, index_t _InplaceLen>
-using CompactVector = Vector<T, GenericCompactChunk<_InplaceLen>>;
+using CompactVector = BasicVector<CompactArrayChunk<T, _InplaceLen>>;
 
 
 

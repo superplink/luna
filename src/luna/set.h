@@ -23,10 +23,11 @@ struct BucketElt {
 };
 
 
-template <GenericChunkC<index_t> _GenericChunk = GenericHeapChunk>
+template <ArrayChunkTypeC<index_t> _Chunk = HeapArrayChunk<index_t>>
 class BasicBucketVector {
 public:
 
+    using chunk_type = _Chunk;
     using size_type = index_t;
 
     void resize_buckets (size_type count) {
@@ -84,8 +85,8 @@ private:
         }
     }
 
-    Vector<size_type, _GenericChunk> _bucket_roots;
-    Vector<size_type, _GenericChunk> _bucket_next;
+    BasicVector<chunk_type> _bucket_roots;
+    BasicVector<chunk_type> _bucket_next;
 
 };
 
@@ -94,36 +95,37 @@ using BucketVector = BasicBucketVector<>;
 
 
 template <
-    class T,
-    HasherC<T> _Hasher = BasicHasher<T>,
-    CompareC<T, T> _Equal = BasicCmp<T>,
-    GenericChunkC<T, index_t> _GenericChunk = GenericHeapChunk>
-class Set {
+    ArrayChunk _Chunk,
+    ArrayChunkTypeC<index_t> _IndexChunk,
+    HasherC<typename _Chunk::value_type> _Hasher = BasicHasher<typename _Chunk::value_type>,
+    CompareC<typename _Chunk::value_type, typename _Chunk::value_type> _Equal = BasicCmp<typename _Chunk::value_type>>
+class BasicSet {
 public:
 
-    using container_type = DenseVector<T, _GenericChunk>;
+    using container_type = BasicDenseVector<_Chunk>;
+    using value_type = typename container_type::value_type;
     using size_type = index_t;
-    using index_type = Index<T>;
+    using index_type = Index<value_type>;
     using hasher = _Hasher;
     using key_equal = _Equal;
 
     using iterator = typename container_type::iterator;
     using const_iterator = typename container_type::const_iterator;
 
-    template <
-        class __Key,
-        class __Val,
-        HasherC<__Key> __Hasher,
-        CompareC<__Key, __Key> __Equal,
-        GenericChunkC<__Key, __Val, index_t> __GenericChunk>
-    friend class Map;
+    // template <
+    //     class __Key,
+    //     class __Val,
+    //     HasherC<__Key> __Hasher,
+    //     CompareC<__Key, __Key> __Equal,
+    //     GenericChunkC<__Key, __Val, index_t> __GenericChunk>
+    // friend class Map;
 
-    Set (size_type __bucket_count = 101, size_type __max_depth = 4, size_type __resize_scaler = 8)
+    BasicSet (size_type __bucket_count = 101, size_type __max_depth = 4, size_type __resize_scaler = 8)
     : _max_depth(__max_depth), _resize_scaler(__resize_scaler) {
         _buckets.resize_buckets(__bucket_count);
     }
 
-    std::pair<index_type, bool> insert (const T& val, const _Hasher& __hasher = {}, const _Equal& __key_equal = {}) {
+    std::pair<index_type, bool> insert (const value_type& val, const _Hasher& __hasher = {}, const _Equal& __key_equal = {}) {
         BucketElt bucket_elt = _find_bucket_elt(val, __hasher, __key_equal);
         if (bucket_elt.at_end()) {
             assert(_buckets.size() >= _elts.next_index());
@@ -150,12 +152,12 @@ public:
     }
 
     template <class _T>
-    T* find (const _T& val, const _Hasher& __hasher = {}, const _Equal& __key_equal = {}) {
+    value_type* find (const _T& val, const _Hasher& __hasher = {}, const _Equal& __key_equal = {}) {
         index_type index = find_index(val, __hasher, __key_equal);
         return index == nullindex ? nullptr : at(index);
     }
     template <class _T>
-    const T* find (const _T& val, const _Hasher& __hasher = {}, const _Equal& __key_equal = {}) const {
+    const value_type* find (const _T& val, const _Hasher& __hasher = {}, const _Equal& __key_equal = {}) const {
         index_type index = find_index(val, __hasher, __key_equal);
         return index == nullindex ? nullptr : at(index);
     }
@@ -180,8 +182,8 @@ public:
         return true;
     }
 
-    T& at (index_type index) { return _elts.at(index); }
-    const T& at (index_type index) const { return _elts.at(index); }
+    value_type& at (index_type index) { return _elts.at(index); }
+    const value_type& at (index_type index) const { return _elts.at(index); }
 
     iterator begin () { return _elts.begin(); }
     iterator end () { return _elts.end(); }
@@ -194,6 +196,11 @@ public:
     auto ipairs () const { return _elts.ipairs(); }
 
     size_type bucket_count () const { return _buckets.bucket_count(); }
+
+    value_type* data () { return _elts.data(); }
+    value_type* data_end () { return _elts.data_end(); }
+    const value_type* data () const { return _elts.data(); }
+    const value_type* data_end () const { return _elts.data_end(); }
 
 private:
 
@@ -213,13 +220,19 @@ private:
         return bucket_elt;
     }
 
-    BasicBucketVector<_GenericChunk> _buckets;
+    BasicBucketVector<_IndexChunk> _buckets;
     container_type _elts;
     
     size_type _max_depth = 4;
     size_type _resize_scaler = 4;
 
 };
+
+
+template <class T, 
+    HasherC<T> _Hasher = BasicHasher<T>,
+    CompareC<T, T> _Equal = BasicCmp<T>>
+using Set = BasicSet<HeapArrayChunk<T>, HeapArrayChunk<index_t>, _Hasher, _Equal>;
 
 
 

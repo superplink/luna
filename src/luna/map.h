@@ -73,76 +73,77 @@ using MapIterator = RemoveChainValueIterator<BasicMapIterator<_Key, _Val>>;
 
 
 template <
-    class _Key,
-    class _Val,
-    HasherC<_Key> _Hasher = BasicHasher<_Key>,
-    CompareC<_Key, _Key> _Equal = BasicCmp<_Key>,
-    GenericChunkC<_Key, _Val, index_t> _GenericChunk = GenericHeapChunk>
-class Map {
+    ArrayChunk _KeyChunk,
+    ArrayChunk _ValChunk,
+    ArrayChunkTypeC<index_t> _IndexChunk,
+    HasherC<typename _KeyChunk::value_type> _Hasher = BasicHasher<typename _KeyChunk::value_type>,
+    CompareC<typename _KeyChunk::value_type, typename _KeyChunk::value_type> _Equal = BasicCmp<typename _KeyChunk::value_type>>
+class BasicMap {
 public:
 
-    using size_type = index_t;
-    using index_type = Index<_Val>;
+    using key_type = typename _KeyChunk::value_type;
+    using value_type = typename _ValChunk::value_type;
 
-    using key_type = _Key;
-    using value_type = _Val;
+    using size_type = index_t;
+    using index_type = Index<value_type>;
+
     using hasher = _Hasher;
     using key_equal = _Equal;
 
-    using iterator = MapIterator<_Key, _Val>;
-    using const_iterator = MapIterator<_Key, const _Val>;
+    using iterator = MapIterator<key_type, value_type>;
+    using const_iterator = MapIterator<key_type, const value_type>;
 
     template <class... _Args>
-    std::pair<index_type, bool> emplace_ex (const _Hasher& hash, const _Equal& cmp, const _Key& key, _Args&&... args) {
+    std::pair<index_type, bool> emplace_ex (const _Hasher& hash, const _Equal& cmp, const key_type& key, _Args&&... args) {
         std::pair<size_type, bool> result = _keys.insert(key, hash, cmp);
         if (!result.second) return result;
         index_type index = _vals.emplace_back(std::forward<_Args>(args)...);
         return std::make_pair(index, true);
     }
     template <class... _Args>
-    std::pair<index_type, bool> emplace (const _Key& key, _Args&&... args) {
+    std::pair<index_type, bool> emplace (const key_type& key, _Args&&... args) {
         return emplace_ex({}, {}, key, std::forward<_Args>(args)...);
     }
 
-    std::pair<index_type, bool> insert (const _Key& key, const _Val& val, const _Hasher& hash = {}, const _Equal& cmp = {}) {
+    std::pair<index_type, bool> insert (const key_type& key, const value_type& val, const _Hasher& hash = {}, const _Equal& cmp = {}) {
         return emplace_ex(hash, cmp, key, val);
     }
 
     template <class _T>
-    _Val* find (const _T& key, const _Hasher& hash = {}, const _Equal& cmp = {}) {
+    value_type* find (const _T& key, const _Hasher& hash = {}, const _Equal& cmp = {}) {
         size_type index = _keys.find_index(key, hash, cmp);
         return index == nullindex ? nullptr : &_vals[index];
     }
     template <class _T>
-    const _Val* find (const _T& key, const _Hasher& hash = {}, const _Equal& cmp = {}) const {
+    const value_type* find (const _T& key, const _Hasher& hash = {}, const _Equal& cmp = {}) const {
         size_type index = _keys.find_index(key, hash, cmp);
         return index == nullindex ? nullptr : &_vals[index];
     }
 
     template <class _T>
-    _Val& at (const _T& key, const _Hasher& hash = {}, const _Equal& cmp = {}) {
+    value_type& at (const _T& key, const _Hasher& hash = {}, const _Equal& cmp = {}) {
         size_type index = _keys.find_index(key, hash, cmp);
         assert(index != nullindex);
         return _vals[index];
     }
     template <class _T>
-    const _Val& at (const _T& key, const _Hasher& hash = {}, const _Equal& cmp = {}) const {
+    const value_type& at (const _T& key, const _Hasher& hash = {}, const _Equal& cmp = {}) const {
         size_type index = _keys.find_index(key, hash, cmp);
         assert(index != nullindex);
         return _vals[index];
     }
 
-    _Val& operator[] (const _Key& key) {
+    value_type& operator[] (const key_type& key) {
         return _vals[emplace(key).first];
     }
-    const _Val& operator[] (const _Key& key) const {
+    const value_type& operator[] (const key_type& key) const {
         return at(key);
     }
 
-    _Val& at_index (index_type index) {
+    value_type& at_index (index_type index) {
         return _vals[index];
     }
-    const _Val& at_index (index_type index) const {
+    const value_type& at_index (index_type index) const {
         return _vals[index];
     }
 
@@ -157,40 +158,53 @@ public:
 
     iterator begin () {
         return iterator(
-            BasicMapIterator<_Key, _Val>(_keys._elts._pool.begin(), _vals._pool.begin()),
-            _vals._removed.begin(),
-            _vals._removed.end()
+            BasicMapIterator<key_type, value_type>(_keys.data(), _vals.data()),
+            _vals.remove_chain_data(),
+            _vals.remove_chain_data_end()
         );
     }
     iterator end () {
         return iterator(
-            BasicMapIterator<_Key, _Val>(_keys._elts._pool.end(), _vals._pool.end()),
-            _vals._removed.begin(),
-            _vals._removed.end()
+            BasicMapIterator<key_type, value_type>(_keys.data_end(), _vals.data_end()),
+            _vals.remove_chain_data(),
+            _vals.remove_chain_data_end()
         );
     }
 
     const_iterator begin () const {
         return const_iterator(
-            BasicMapIterator<_Key, const _Val>(_keys._elts._pool.begin(), _vals._pool.begin()),
-            _vals._removed.begin(),
-            _vals._removed.end()
+            BasicMapIterator<key_type, const value_type>(_keys.data(), _vals.data()),
+            _vals.remove_chain_data(),
+            _vals.remove_chain_data_end()
         );
     }
     const_iterator end () const {
         return const_iterator(
-            BasicMapIterator<_Key, const _Val>(_keys._elts._pool.end(), _vals._pool.end()),
-            _vals._removed.begin(),
-            _vals._removed.end()
+            BasicMapIterator<key_type, const value_type>(_keys.data_end(), _vals.data_end()),
+            _vals.remove_chain_data(),
+            _vals.remove_chain_data_end()
         );
     }
 
 private:
 
-    Set<_Key, _Hasher, _Equal, _GenericChunk> _keys;
-    DenseVector<_Val, _GenericChunk> _vals;
+    BasicSet<_KeyChunk, _IndexChunk, _Hasher, _Equal> _keys;
+    BasicDenseVector<_ValChunk> _vals;
 
 };
+
+template <
+    class _Key,
+    class _Val,
+    HasherC<_Key> _Hasher = BasicHasher<_Key>,
+    CompareC<_Key, _Key> _Equal = BasicCmp<_Key>>
+using Map = BasicMap<
+    HeapArrayChunk<_Key>,
+    HeapArrayChunk<_Val>,
+    HeapArrayChunk<index_t>,
+    _Hasher,
+    _Equal
+>;
 
 
 } // namespace luna

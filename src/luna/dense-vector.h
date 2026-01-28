@@ -70,7 +70,7 @@ template <class It>
 class RemoveChainValueIterator {
 public:
 
-    using size_type = index_t;
+    using size_type = const index_t;
     using value_type = typename std::iterator_traits<It>::value_type;
     using reference = typename std::iterator_traits<It>::reference;
     using pointer = typename std::iterator_traits<It>::pointer;
@@ -221,62 +221,62 @@ struct RemoveChainUninitializedMove {
 
 
 
-template <class T, GenericChunkC<T> _GenericChunk = GenericHeapChunk>
-class DenseVector {
+template <ArrayChunk _Chunk>
+class BasicDenseVector {
 public:
 
-    using value_type = T;
+    using pool_type = PushArrayChunk<_Chunk>;
+    using value_type = typename pool_type::value_type;
     using size_type = index_t;  
-    using index_type = Index<T>;
-    using pool_type = PushArrayChunk<T, GenericChunkType<_GenericChunk, T>>;
+    using index_type = Index<value_type>;
 
-    using iterator = RemoveChainValueIterator<T*>;
-    using const_iterator = RemoveChainValueIterator<const T*>;
+    using iterator = RemoveChainValueIterator<value_type*>;
+    using const_iterator = RemoveChainValueIterator<const value_type*>;
     using reverse_iterator = std::reverse_iterator<iterator>;
     using const_reverse_iterator = std::reverse_iterator<const_iterator>;
     using allocator = pool_type::allocator;
 
-    template <
-        class __Key,
-        class __Val,
-        HasherC<__Key> __Hasher,
-        CompareC<__Key, __Key> __Equal,
-        GenericChunkC<__Key, __Val, index_t> __GenericChunk>
-    friend class Map;
+    // template <
+    //     class __Key,
+    //     class __Val,
+    //     HasherC<__Key> __Hasher,
+    //     CompareC<__Key, __Key> __Equal,
+    //     GenericChunkC<__Key, __Val, index_t> __GenericChunk>
+    // friend class Map;
 
-    DenseVector () {}
+    BasicDenseVector () {}
 
-    template <ArrayChunk _OtherPool>
-    DenseVector (const DenseVector<T, _OtherPool>& other) {
+    template <ArrayChunkTypeC<value_type> _OtherPool>
+    BasicDenseVector (const BasicDenseVector<_OtherPool>& other) {
         reserve(other.capacity());
         _pool.push_back(other._pool.size());
         _get_mv().copy(other.begin(), other.end(), _pool.begin());
     }
 
-    template <ArrayChunk _OtherPool>
-    DenseVector (DenseVector<T, _OtherPool>&& other) {
+    template <ArrayChunkTypeC<value_type> _OtherPool>
+    BasicDenseVector (BasicDenseVector<_OtherPool>&& other) {
         reserve(other.capacity());
         _pool.push_back(other._pool.size());
         _get_mv().move(other.begin(), other.end(), _pool.begin());
     }
 
-    template <ArrayChunk _OtherPool>
-    DenseVector& operator= (const DenseVector<T, _OtherPool>& other) {
+    template <ArrayChunkTypeC<value_type> _OtherPool>
+    BasicDenseVector& operator= (const BasicDenseVector<_OtherPool>& other) {
         reserve(other.capacity());
         _pool.push_back(other._pool.size());
         _get_mv().copy(other.begin(), other.end(), _pool.begin());
         return *this;
     }
 
-    template <ArrayChunk _OtherPool>
-    DenseVector& operator= (DenseVector<T, _OtherPool>&& other) {
+    template <ArrayChunkTypeC<value_type> _OtherPool>
+    BasicDenseVector& operator= (BasicDenseVector<_OtherPool>&& other) {
         reserve(other.capacity());
         _pool.push_back(other._pool.size());
         _get_mv().move(other.begin(), other.end(), _pool.begin());
         return *this;
     }
 
-    ~DenseVector () {
+    ~BasicDenseVector () {
         _destroy_elts();
     }
 
@@ -294,7 +294,7 @@ public:
         return index;
     }
 
-    index_type push_back (const T& val) {
+    index_type push_back (const value_type& val) {
         return emplace_back(val);
     }
 
@@ -316,11 +316,11 @@ public:
         _removed.clear();
     }
 
-    T& at (index_type index) { return _pool.at(index); }
-    const T& at (index_type index) const { return _pool.at(index); }
+    value_type& at (index_type index) { return _pool.at(index); }
+    const value_type& at (index_type index) const { return _pool.at(index); }
 
-    T& operator[] (index_type index) { return _pool.at(index); }
-    const T& operator[] (index_type index) const { return _pool.at(index); }
+    value_type& operator[] (index_type index) { return _pool.at(index); }
+    const value_type& operator[] (index_type index) const { return _pool.at(index); }
 
     size_type size () const { return _removed.size(); }
     size_type full_size () const { return _removed.full_size(); }
@@ -336,23 +336,26 @@ public:
     const_reverse_iterator rbegin () const { return std::make_reverse_iterator(end()); }
     const_reverse_iterator rend () const { return std::make_reverse_iterator(begin()); }
 
-    RemoveChainIPairView<T*> ipairs () {
-        return RemoveChainIPairView<T*>(_pool.begin(), _pool.end(), _removed.begin(), _removed.end());
+    RemoveChainIPairView<value_type*> ipairs () {
+        return RemoveChainIPairView<value_type*>(_pool.begin(), _pool.end(), _removed.begin(), _removed.end());
     }
-    RemoveChainIPairView<const T*> ipairs () const {
-        return RemoveChainIPairView<const T*>(_pool.begin(), _pool.end(), _removed.begin(), _removed.end());
+    RemoveChainIPairView<const value_type*> ipairs () const {
+        return RemoveChainIPairView<const value_type*>(_pool.begin(), _pool.end(), _removed.begin(), _removed.end());
     }
 
     index_type next_index () const {
         return _removed.next_index();
     }
 
-    T* data () { return _pool.begin(); }
-    // T* data_end () { return _pool.end(); }
-    const T* data () const { return _pool.begin(); }
-    // const T* data_end () const { return _pool.end(); }
+    value_type* data () { return _pool.begin(); }
+    value_type* data_end () { return _pool.end(); }
+    const value_type* data () const { return _pool.begin(); }
+    const value_type* data_end () const { return _pool.end(); }
 
-// private:
+    const size_type* remove_chain_data () const { return _removed.begin(); }
+    const size_type* remove_chain_data_end () const { return _removed.end(); }
+
+private:
 
     void _destroy_elts () {
         for (size_type i = _pool.size(); i-- > 0;) {
@@ -361,8 +364,8 @@ public:
         }
     }
 
-    RemoveChainUninitializedMove<T> _get_mv () {
-        return RemoveChainUninitializedMove<T>{ _removed.begin() };
+    RemoveChainUninitializedMove<value_type> _get_mv () {
+        return RemoveChainUninitializedMove<value_type>{ _removed.begin() };
     }
 
     pool_type _pool;
@@ -370,13 +373,12 @@ public:
 
 };
 
+
+template <class T, class _Alloc = std::allocator<T>>
+using DenseVector = BasicDenseVector<HeapArrayChunk<T, _Alloc>>;
+
+
 static_assert(UnorderedVectorC<DenseVector<int>>);
-
-
-// template <class T, class U, ArrayChunk _P1, ArrayChunk _P2>
-// inline auto zip_like_dense_vectors (DenseVector<T, _P1>& a, DenseVector<U, _P2>& b) {
-//     return std::
-// }
 
 
 
