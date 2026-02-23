@@ -70,7 +70,7 @@ public:
 
     using size_type = index_t;
 
-    static constexpr size () { return _Len; }
+    static constexpr index_t size () { return _Len; }
 
     constexpr T* data () { return (T*)_bytes; }
     constexpr const T* data () const { return (T*)_bytes; }
@@ -187,7 +187,7 @@ public:
     using allocator = _Alloc;
     using alloc_traits = std::allocator_traits<_Alloc>;
 
-    static constexpr size () { return _Len; }
+    static constexpr index_t size () { return _Len; }
 
     // does nothing
     void allocate (size_type count) {

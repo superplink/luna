@@ -31,14 +31,14 @@ public:
     template <class U>
     explicit constexpr operator Index<U> () { return value; }
 
-    constexpr operator== (index_t n) const { return value == n; }
-    constexpr operator!= (index_t n) const { return value != n; }
+    constexpr bool operator== (index_t n) const { return value == n; }
+    constexpr bool operator!= (index_t n) const { return value != n; }
 
-    constexpr operator== (Index<T> n) const { return value == n.value; }
-    constexpr operator!= (Index<T> n) const { return value != n.value; }
+    constexpr bool operator== (Index<T> n) const { return value == n.value; }
+    constexpr bool operator!= (Index<T> n) const { return value != n.value; }
 
-    constexpr operator== (nullindex_t) const { return value == -1; }
-    constexpr operator!= (nullindex_t) const { return value != -1; }
+    constexpr bool operator== (nullindex_t) const { return value == -1; }
+    constexpr bool operator!= (nullindex_t) const { return value != -1; }
 
     Index& operator++ () {
         value++;

@@ -15,7 +15,6 @@ public:
     using value_type = T;
     using size_type = index_t;  
     using index_type = Index<T>;
-    using pool_type = PushArrayChunk<T, _Pool>;
 
     using iterator = T*;
     using const_iterator = const T*;
@@ -25,11 +24,11 @@ public:
     static constexpr size_type size () { return _Len; }
 
     constexpr T& at (index_type index) {
-        ASSERT_IN_RANGE(index, 0, size() - 1);
+        ASSERT_IN_RANGE((size_type)index, 0, size() - 1);
         return _elts[index];
     }
     constexpr const T& at (index_type index) const {
-        ASSERT_IN_RANGE(index, 0, size() - 1);
+        ASSERT_IN_RANGE((size_type)index, 0, size() - 1);
         return _elts[index];
     }
     constexpr T& operator[] (index_type index) { return at(index); }
