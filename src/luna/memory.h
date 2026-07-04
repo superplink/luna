@@ -49,7 +49,8 @@ concept ArrayChunk = requires (T pool, typename T::size_type count, typename T::
     { pool.end() } -> std::convertible_to<typename T::value_type*>;
     { pool.data() } -> std::convertible_to<typename T::value_type*>;
     
-    { pool.at(index) } -> std::convertible_to<typename T::value_type>;
+    pool.at(index);
+    // { pool.at(index) } -> std::convertible_to<typename T::value_type>;
 };
 
 template <class _Chunk, class T>

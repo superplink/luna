@@ -124,6 +124,8 @@ public:
     using reverse_iterator = std::reverse_iterator<iterator>;
     using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
+    Span() : _begin(nullptr), _end(nullptr) {}
+
     Span (T* __begin, size_type length)
     : _begin(__begin), _end(__begin + length) {}
 

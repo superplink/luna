@@ -142,6 +142,7 @@ public:
         return std::make_pair((index_type)bucket_elt.index, false);
     }
 
+    // remove an element. returns index of removed object, nullptr if it didn't exisst
     template <class _T>
     index_type remove (const _T& val, const _Hasher& __hasher = {}, const _Equal& __key_equal = {}) {
         BucketElt elt = _find_bucket_elt(val, __hasher, __key_equal);
@@ -151,17 +152,21 @@ public:
         return elt.index;
     }
 
+    // get a pointer to an element, returns nullptr if it doe snot exist
     template <class _T>
     value_type* find (const _T& val, const _Hasher& __hasher = {}, const _Equal& __key_equal = {}) {
         index_type index = find_index(val, __hasher, __key_equal);
         return index == nullindex ? nullptr : at(index);
     }
+
+    // get a pointer to an element, returns nullptr if it doe snot exist
     template <class _T>
     const value_type* find (const _T& val, const _Hasher& __hasher = {}, const _Equal& __key_equal = {}) const {
         index_type index = find_index(val, __hasher, __key_equal);
         return index == nullindex ? nullptr : at(index);
     }
 
+    // find the index of a value, returns nullindex if it does not exist
     template <class _T>
     index_type find_index (const _T& val, const _Hasher& __hasher = {}, const _Equal& __key_equal = {}) const {
         return _find_bucket_elt(val, __hasher, __key_equal).index;
